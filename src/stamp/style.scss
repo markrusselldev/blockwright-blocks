@@ -1,0 +1,124 @@
+
+// blockwright/stamp - a rotated corner badge ("rubber stamp"). Enqueued via the block's `style`
+// handle (front end + editor iframe). The block supplies per instance: TEXT (RichText), CORNER
+// (--tr/--tl/--br/--bl), ROTATION (--bw-stamp-rot), OFFSET (--bw-stamp-x/y, only when the sliders
+// move; otherwise the tuned defaults below apply), BORDER type modifier, and COLOUR / border
+// colour+radius / font size (core block supports). Design values via token() (_tokens.scss).
+//
+// There is NO fill - the background is transparent so the card shows through; only text + frame
+// read. The stamp's DIRECT parent is the positioning context via :has() on the front end (in the
+// editor, core already makes every block wrapper relative); don't give it overflow:hidden or the
+// overhanging corner clips.
+@use '../tokens' as *;
+
+// The tuned default overhang: how far the rotated corner peeks past the container edge. This is
+// the stamp's own COMPONENT GEOMETRY (a position, not layout spacing), so it is decoupled from the
+// design spacing scale - a scale change must not move the badge - and matches the JS slider
+// defaults (index.js DEFAULT_X -4px, DEFAULT_Y -10px). The --bw-stamp-x/y vars let the sliders
+// override it.
+$overhang-y: -0.625rem; // token-exempt: stamp overhang, component geometry (10px)
+$overhang-x: -0.25rem; // token-exempt: stamp overhang, component geometry (4px)
+
+// Positioning context (front end): any group/column that directly holds a stamp.
+:where(.wp-block-group, .wp-block-column):has(> .bw-stamp) {
+	position: relative;
+}
+
+.bw-stamp {
+	position: absolute;
+	z-index: 1;
+	margin: 0;
+	transform: rotate(var(--bw-stamp-rot, 18deg));
+	transform-origin: center;
+	background-color: transparent;
+	// Frame: width fixed here; colour + radius come from the block's border controls (fall back
+	// to currentColor = the default colour below / medium radius); style comes from the border-type modifier below.
+	border-width: token('border--width--medium');
+	border-radius: token('border-radius--m');
+	padding: 0.25rem 0.5rem; // token-exempt: stamp badge geometry (tuned), decoupled from the spacing scale
+	font-weight: 800;
+	letter-spacing: 0.12em;
+	text-transform: uppercase;
+	line-height: 1.1;
+	pointer-events: none;
+
+	// Default colour = the brand link token, so an untouched stamp re-hues with the visitor's
+	// colour variation (same convention as the icon blocks). The border + inner frame inherit it
+	// via currentColor. DOUBLED class (0,2,0): the stamp is a <p>, and the theme's
+	// `:root :where(p)` colour rule (0,1,0, :where() is zero) ties a single `.bw-stamp` and wins
+	// on source order - the same trap the Stat block's __value documents. A per-instance colour
+	// set in the block controls still overrides (WP colour classes are !important).
+	&#{&} {
+		color: token('color--link');
+	}
+
+	// Inner frame - the "double border". Hidden by default; the double border-type shows it.
+	// Inherits the block's border colour/style/radius so it tracks the controls.
+	&::before {
+		content: "";
+		position: absolute;
+		inset: 0.125rem; // token-exempt: stamp inner-frame gap (tuned), decoupled from the spacing scale
+		border-width: token('border--width--thin');
+		border-style: inherit;
+		border-color: inherit;
+		border-radius: inherit;
+		display: none;
+	}
+
+	// Border type.
+	&--border-double,
+	&--border-solid {
+		border-style: solid;
+	}
+
+	&--border-dashed {
+		border-style: dashed;
+	}
+
+	&--border-dotted {
+		border-style: dotted;
+	}
+
+	&--border-double::before {
+		display: block;
+	}
+
+	// Corner placement. Offsets are vars so the sliders can override; the fallbacks are the tuned
+	// default.
+	&--tr {
+		top: var(--bw-stamp-y, #{$overhang-y});
+		right: var(--bw-stamp-x, #{$overhang-x});
+		left: auto;
+		bottom: auto;
+	}
+
+	&--tl {
+		top: var(--bw-stamp-y, #{$overhang-y});
+		left: var(--bw-stamp-x, #{$overhang-x});
+		right: auto;
+		bottom: auto;
+	}
+
+	&--br {
+		bottom: var(--bw-stamp-y, #{$overhang-y});
+		right: var(--bw-stamp-x, #{$overhang-x});
+		left: auto;
+		top: auto;
+	}
+
+	&--bl {
+		bottom: var(--bw-stamp-y, #{$overhang-y});
+		left: var(--bw-stamp-x, #{$overhang-x});
+		right: auto;
+		top: auto;
+	}
+
+	// Editor canvas only: WP core forces position:relative on every block wrapper
+	// (.block-editor-block-list__block, 0,2,0), cancelling the stamp's absolute positioning.
+	// Re-assert it, and make it clickable to select (the front end keeps pointer-events:none so
+	// decorative clicks pass through).
+	.block-editor-block-list__layout & {
+		position: absolute;
+		pointer-events: auto;
+	}
+}

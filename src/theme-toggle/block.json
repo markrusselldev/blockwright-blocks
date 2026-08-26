@@ -1,0 +1,24 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "blockwright/theme-toggle",
+	"version": "1.1.0",
+	"title": "Light / Dark Toggle",
+	"category": "design",
+	"icon": "visibility",
+	"description": "A visitor control that flips between light and dark. The site is adaptive by default; a choice lasts the session, then returns to the visitor's system setting. Place it in the header.",
+	"keywords": [ "dark mode", "light", "theme", "toggle", "colour scheme", "sun", "moon" ],
+	"textdomain": "blockwright-blocks",
+	"supports": {
+		"anchor": true,
+		"align": [ "left", "center", "right" ],
+		"html": false,
+		"color": { "__experimentalDefaultControls": { "text": true } },
+		"spacing": { "padding": true, "margin": true, "__experimentalDefaultControls": { "padding": false, "margin": false } },
+		"__experimentalBorder": { "color": true, "radius": true, "style": true, "width": true, "__experimentalDefaultControls": { "color": false, "radius": false, "style": false, "width": false } },
+		"typography": { "fontSize": true, "__experimentalDefaultControls": { "fontSize": true } }
+	},
+	"editorScript": "file:./index.js",
+	"style": "file:./style-index.css",
+	"viewScript": "file:./view.js"
+}

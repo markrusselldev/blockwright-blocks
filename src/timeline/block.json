@@ -1,0 +1,22 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "blockwright/timeline",
+	"version": "1.1.0",
+	"title": "Timeline",
+	"category": "design",
+	"icon": "clock",
+	"description": "A vertical timeline of steps, milestones, or process stages - each entry an icon marker, optional date, heading, and text. Add and reorder entries like a normal list.",
+	"keywords": [ "timeline", "steps", "process", "roadmap", "milestones", "history" ],
+	"textdomain": "blockwright-blocks",
+	"supports": {
+		"anchor": true,
+		"align": [ "wide" ],
+		"html": false,
+		"color": { "gradients": true, "link": true, "__experimentalDefaultControls": { "text": true } },
+		"spacing": { "padding": true, "margin": [ "top", "bottom" ] },
+		"typography": { "fontSize": true, "lineHeight": true, "__experimentalFontFamily": true, "__experimentalFontWeight": true, "__experimentalDefaultControls": { "fontSize": true } }
+	},
+	"editorScript": "file:./index.js",
+	"style": "file:./style-index.css"
+}

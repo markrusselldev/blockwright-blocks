@@ -1,0 +1,38 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "blockwright/icon-box",
+	"version": "1.1.0",
+	"title": "Icon Box",
+	"category": "design",
+	"icon": "screenoptions",
+	"description": "An icon, heading, text, and optional link combined into one feature card - for feature grids, service highlights, and callouts.",
+	"keywords": [ "icon", "box", "feature", "card", "service", "benefit" ],
+	"textdomain": "blockwright-blocks",
+	"attributes": {
+		"icon": { "type": "string", "default": "blockwright/lightbulb" },
+		"customSvg": { "type": "string", "default": "" },
+		"iconPosition": { "type": "string", "default": "top" },
+		"iconSize": { "type": "string", "default": "large" },
+		"verticalAlignment": { "type": "string", "default": "" },
+		"alignment": { "type": "string", "default": "center" },
+		"heading": { "type": "string", "default": "" },
+		"text": { "type": "string", "default": "" },
+		"linkText": { "type": "string", "default": "" },
+		"linkUrl": { "type": "string", "default": "" }
+	},
+	"supports": {
+		"anchor": true,
+		"align": [ "wide", "full" ],
+		"html": false,
+		"color": { "gradients": true, "link": true, "__experimentalDefaultControls": { "background": true, "text": true } },
+		"spacing": { "padding": true, "margin": [ "top", "bottom" ], "blockGap": true, "__experimentalDefaultControls": { "padding": true } },
+		"dimensions": { "minHeight": true },
+		"__experimentalBorder": { "color": true, "radius": true, "style": true, "width": true, "__experimentalDefaultControls": { "color": true, "radius": true, "style": true, "width": true } },
+		"shadow": true,
+		"typography": { "fontSize": true, "lineHeight": true, "__experimentalFontFamily": true, "__experimentalFontWeight": true, "__experimentalTextTransform": true, "__experimentalLetterSpacing": true, "__experimentalDefaultControls": { "fontSize": true } }
+	},
+	"editorScript": "file:./index.js",
+	"style": "file:./style-index.css",
+	"render": "file:./render.php"
+}

@@ -1,0 +1,14 @@
+{
+	"name": "blockwright-blocks",
+	"version": "1.2.0",
+	"description": "Dev tooling for the Blockwright Blocks plugin (blocks built with @wordpress/scripts; no-JSX).",
+	"type": "module",
+	"scripts": {
+		"build": "wp-scripts build",
+		"start": "wp-scripts start"
+	},
+	"devDependencies": {
+		"@phosphor-icons/core": "^2.1.1",
+		"@wordpress/scripts": "^34.1.0"
+	}
+}

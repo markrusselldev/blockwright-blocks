@@ -1,0 +1,27 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "blockwright/timeline-item",
+	"version": "1.1.0",
+	"title": "Timeline Entry",
+	"category": "design",
+	"icon": "marker",
+	"description": "A single entry inside a Timeline: icon marker, optional date, heading, and text.",
+	"keywords": [ "timeline", "step", "entry", "milestone" ],
+	"textdomain": "blockwright-blocks",
+	"parent": [ "blockwright/timeline" ],
+	"attributes": {
+		"icon": { "type": "string", "default": "blockwright/check-circle" },
+		"customSvg": { "type": "string", "default": "" },
+		"date": { "type": "string", "default": "" },
+		"heading": { "type": "string", "default": "" },
+		"text": { "type": "string", "default": "" }
+	},
+	"supports": {
+		"anchor": true, "html": false, "reusable": false, "inserter": false,
+		"color": { "__experimentalDefaultControls": { "text": true } },
+		"typography": { "fontSize": true, "lineHeight": true, "__experimentalFontWeight": true, "__experimentalDefaultControls": { "fontSize": true } }
+	},
+	"editorScript": "file:./index.js",
+	"render": "file:./render.php"
+}

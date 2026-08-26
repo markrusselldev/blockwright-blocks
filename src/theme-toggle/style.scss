@@ -1,0 +1,75 @@
+
+// blockwright/theme-toggle - Light / Dark Toggle. Enqueued via the block's `style` handle (front
+// end + editor iframe). The button holds a sun and a moon; the one that shows is the ACTION (a
+// moon while the page is light = "switch to dark", a sun while dark = "switch to light"). Which
+// one is decided by `data-bw-scheme` on <html> when the visitor has chosen this session, and by
+// the OS `prefers-color-scheme` otherwise. The icon scales with the block's font size (em), so the
+// typography control resizes it. Design values via token().
+@use '../tokens' as *;
+
+.bw-theme-toggle {
+	// A block-level box sized to its icon, so WordPress's constrained layout places it in the
+	// content column (like every other block) instead of letting an inline element escape to
+	// the page gutter. As a flex item in a header it still sizes to content and sits inline.
+	display: flex;
+	width: fit-content;
+	align-items: center;
+	justify-content: center;
+	padding: token('spacing--xx-small');
+	background: transparent;
+	// Zero-WIDTH solid border by default, NOT `border: 0`. `border: 0` sets border-style:none,
+	// and CSS forces computed border-width to 0 whenever the style is none - which makes the
+	// block's WP border support (width/colour) a dead control (the user sets a border, nothing
+	// renders). Keeping border-style:solid lets a user-set width/colour show. Verified 7.1-RC4.
+	border-style: solid;
+	border-width: 0;
+	color: inherit;
+	cursor: pointer;
+	line-height: 0;
+
+	&:hover {
+		color: token('color--link');
+	}
+
+	&:focus-visible {
+		outline: token('border--width--medium') solid token('color--link');
+		outline-offset: token('border--width--medium'); // reuse the 2px design constant for the focus gap.
+	}
+
+	&__icon {
+		display: none;
+
+		svg {
+			display: block;
+			width: 1.25em;
+			height: 1.25em;
+		}
+	}
+}
+
+// Which glyph shows is the ACTION a click performs. Adaptive default (no explicit choice this
+// session): follow the OS, so a light page offers the moon and a dark page offers the sun.
+html:not([data-bw-scheme]) {
+	.bw-theme-toggle__icon--moon {
+		display: inline-flex;
+	}
+
+	@media (prefers-color-scheme: dark) {
+		.bw-theme-toggle__icon--moon {
+			display: none;
+		}
+
+		.bw-theme-toggle__icon--sun {
+			display: inline-flex;
+		}
+	}
+}
+
+// An explicit session choice wins (set by inc/color-scheme.php before paint, kept by view.js).
+html[data-bw-scheme='light'] .bw-theme-toggle__icon--moon {
+	display: inline-flex;
+}
+
+html[data-bw-scheme='dark'] .bw-theme-toggle__icon--sun {
+	display: inline-flex;
+}
