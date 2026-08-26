@@ -1,0 +1,44 @@
+// blockwright/icon-list (+ icon-list-item). Compiled to build/icon-list/style-index.css by
+// wp-scripts and enqueued via the block.json `style` handle (front end + editor iframe); the item
+// rows render inside the parent, so one style handle covers both. Every design value comes from a
+// theme.json token via token() (fallbacks in src/_tokens.scss).
+@use '../tokens' as *;
+
+.bw-icon-list {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: flex;
+	flex-direction: column;
+	gap: token('spacing--small');
+
+	&__item {
+		display: flex;
+		align-items: flex-start;
+		gap: token('spacing--small');
+		margin: 0;
+	}
+
+	&__icon {
+		flex-shrink: 0;
+		color: token('color--link');
+		line-height: 0;
+
+		svg {
+			display: block;
+			width: 1.5em;
+			height: 1.5em;
+		}
+
+		// wp_get_icon() strips the SVG's fill; forward the icon span's token colour (above) via
+		// currentColor so it stays adaptive. :not([fill]) leaves a pasted Custom SVG's own fill
+		// alone.
+		svg:not([fill]) {
+			fill: currentColor;
+		}
+	}
+
+	&__text {
+		margin: 0;
+	}
+}

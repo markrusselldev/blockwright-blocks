@@ -1,0 +1,59 @@
+<?xml version="1.0"?>
+<ruleset name="Blockwright Blocks">
+	<description>WordPress Coding Standards for the Blockwright Blocks plugin</description>
+
+	<!-- What to scan (plugin PHP only). Block PHP is authored under src/<slug>/ (render.php);
+	     build/ is the @wordpress/scripts output and is not linted. -->
+	<file>blockwright-blocks.php</file>
+	<file>inc</file>
+	<file>src</file>
+
+	<!-- What to skip. -->
+	<exclude-pattern>*/vendor/*</exclude-pattern>
+	<exclude-pattern>*/node_modules/*</exclude-pattern>
+	<exclude-pattern>*/scripts/*</exclude-pattern>
+
+	<!-- Default CLI behaviour. -->
+	<arg name="colors"/>
+	<arg name="report" value="full"/>
+	<arg name="report-width" value="120"/>
+	<arg value="p"/> <!-- progress -->
+	<arg value="s"/> <!-- show sniff codes -->
+	<arg name="extensions" value="php"/>
+	<arg name="parallel" value="8"/>
+
+	<!-- Standards. -->
+	<rule ref="WordPress-Core"/>
+	<rule ref="WordPress-Extra"/>
+	<rule ref="WordPress-Docs"/>
+
+	<!-- PHP compatibility: match the plugin header "Requires PHP: 7.4". -->
+	<config name="testVersion" value="7.4-"/>
+	<rule ref="PHPCompatibilityWP"/>
+
+	<!-- WordPress target: match the plugin header "Requires at least: 7.0". -->
+	<config name="minimum_wp_version" value="7.0"/>
+
+	<!-- i18n text domain (matches the plugin slug). -->
+	<rule ref="WordPress.WP.I18n">
+		<properties>
+			<property name="text_domain" type="array">
+				<element value="blockwright-blocks"/>
+			</property>
+		</properties>
+	</rule>
+
+	<!-- Global prefixes for functions/classes/hooks/constants/globals. The plugin
+	     namespaces its PHP under Blockwright_Blocks\; constants use BLOCKWRIGHT_BLOCKS_;
+	     hooks/handles/options use the blockwright- / blockwright_blocks_ prefix. -->
+	<rule ref="WordPress.NamingConventions.PrefixAllGlobals">
+		<properties>
+			<property name="prefixes" type="array">
+				<element value="Blockwright_Blocks"/>
+				<element value="BLOCKWRIGHT_BLOCKS"/>
+				<element value="blockwright_blocks"/>
+				<element value="blockwright"/>
+			</property>
+		</properties>
+	</rule>
+</ruleset>

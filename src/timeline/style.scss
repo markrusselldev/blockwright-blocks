@@ -1,0 +1,107 @@
+
+// blockwright/timeline (+ timeline-item). Enqueued via the parent block's `style` handle so it
+// reaches BOTH the front end and the editor iframe; entries render inside the parent, so one
+// style handle covers both. Design values come from token() (_tokens.scss); the marker circle
+// and connector geometry are component constants (no design-system token), named below.
+@use '../tokens' as *;
+@use 'sass:math';
+
+// Component geometry (not theme.json design tokens - the marker's own dimensions).
+$marker-size: 2.5rem;
+$icon-size: 1.25rem;
+$marker-center: math.div($marker-size, 2); // connector x, and the first/last-child line stops.
+
+.bw-timeline {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+
+	&__item {
+		position: relative;
+		display: flex;
+		gap: token('spacing--medium');
+		padding-bottom: token('spacing--large');
+
+		&:last-child {
+			padding-bottom: 0;
+		}
+
+		// Connective vertical line, centred on the marker column; markers sit above it.
+		&::before {
+			content: "";
+			position: absolute;
+			top: 0;
+			bottom: 0;
+			left: $marker-center;
+			width: token('border--width--medium');
+			margin-left: -1px;
+			background: token('color--border-default');
+			opacity: 0.5;
+		}
+
+		&:first-child::before {
+			top: $marker-center;
+		}
+
+		&:last-child::before {
+			bottom: calc(100% - #{$marker-center});
+		}
+	}
+
+	&__marker {
+		position: relative;
+		z-index: 1;
+		flex-shrink: 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: $marker-size;
+		height: $marker-size;
+		border-radius: 50%;
+		color: token('color--link');
+		background: token('color--surface-2');
+		box-shadow: 0 0 0 token('border--width--medium') token('color--border-default');
+	}
+
+	&__icon {
+		line-height: 0;
+
+		svg {
+			display: block;
+			width: $icon-size;
+			height: $icon-size;
+		}
+
+		// wp_get_icon() strips the SVG fill; forward the marker's token colour via currentColor
+		// so the icon stays adaptive. :not([fill]) leaves a pasted Custom SVG's own fill alone.
+		svg:not([fill]) {
+			fill: currentColor;
+		}
+	}
+
+	&__content {
+		display: flex;
+		flex-direction: column;
+		gap: token('spacing--x-small');
+		padding-top: token('spacing--x-small');
+	}
+
+	&__date {
+		font-size: token('font-size--small');
+		font-weight: 600;
+		letter-spacing: 0.02em;
+		text-transform: uppercase;
+		color: token('color--text-2');
+
+		&:empty {
+			display: none;
+		}
+	}
+
+	// The timeline owns its internal rhythm via the flex gap above, so zero the theme's
+	// heading/paragraph margins on the content children. 3-class selector (0,3,0) beats the
+	// theme's rhythm rule (.wp-site-blocks :where(h3,h4):not(:first-child), 0,2,0).
+	& &__item &__content > * {
+		margin: 0;
+	}
+}

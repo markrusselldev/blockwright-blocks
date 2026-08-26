@@ -1,0 +1,214 @@
+
+// blockwright/icon-box. Enqueued via the block's `style` handle (front end + editor iframe).
+// The box chrome (padding override, border, radius, background, shadow) is core block supports;
+// this file owns only the internal layout + icon. Design values via token() (_tokens.scss).
+@use '../tokens' as *;
+
+.bw-icon-box {
+	padding: token('spacing--large');
+
+	// The content wrapper is TRANSPARENT by default (display:contents) so the heading/text/link
+	// behave as direct flex/grid items of the box. That is what lets the icon align to the HEADING
+	// row in the Left/Right media-object layout. When the user opts into whole-card vertical
+	// alignment (below), it becomes a real single column instead, so the icon can align against the
+	// full heading+text height.
+	&__content {
+		display: contents;
+	}
+
+	// STACKED (default). Icon above the content, everything in one column.
+	&.is-position-top {
+		display: flex;
+		flex-direction: column;
+		gap: token('spacing--small');
+
+		&.is-align-center {
+			align-items: center;
+			text-align: center;
+		}
+	}
+
+	// MEDIA OBJECT (Left / Right). A 2-column grid. The content is flattened (display:contents), so
+	// the heading is its own grid row and the icon can centre on it - the fix for the "icon never
+	// lines up with a heading" problem (see the field note). Grid, not flex, because aligning to
+	// the heading's row needs the second dimension core/media-text also reaches for.
+	&.is-position-left,
+	&.is-position-right {
+		display: grid;
+		// Pin the grid to LTR so a "Left" icon keeps its physical side in RTL (matching
+		// core/media-text). Set INLINE in render.php / edit.js, not here, because rtlcss strips its
+		// own `/*rtl:ignore*/` in our minified build and would flip a stylesheet `direction`. The
+		// text direction is reset on the children below.
+		column-gap: token('spacing--small');
+		row-gap: token('spacing--small');
+		align-items: start;
+
+		// Text reads in the page's own direction. rtlcss flips this `ltr` to `rtl` in the RTL
+		// stylesheet, so on an RTL site the columns stay put but the heading/text/link read RTL.
+		.bw-icon-box__heading,
+		.bw-icon-box__text,
+		.bw-icon-box__link {
+			direction: ltr;
+		}
+
+		.bw-icon-box__icon {
+			grid-row: 1;
+			align-self: center;
+		}
+		.bw-icon-box__heading {
+			grid-row: 1;
+		}
+		.bw-icon-box__text {
+			grid-row: 2;
+		}
+		.bw-icon-box__link {
+			grid-row: 3;
+		}
+
+		// Optical alignment. Trim the heading's leading to its cap band, then centre both the icon
+		// and heading on the shared row 1. Because icons are drawn optically centred in their own
+		// box, centring the boxes lands the icon's optical centre on the heading's cap band -
+		// correct regardless of each icon's internal padding, which top-alignment would expose.
+		// text-box-trim reached cross-browser Baseline 2026-08; where unsupported the heading is not
+		// trimmed and the icon simply centres on the line box.
+		.bw-icon-box__heading {
+			text-box-trim: trim-both;
+			text-box-edge: cap alphabetic;
+			align-self: center;
+		}
+
+		// WHOLE-CARD alignment (opt-in via the toolbar control). The content becomes a real single
+		// column, so the icon aligns against the FULL heading+text+link height instead of the
+		// heading - the classic media-object behaviour, for a large icon beside a paragraph. With
+		// no value set, the optical centring above is the (device-consistent) default.
+		&.is-vertically-aligned-top,
+		&.is-vertically-aligned-center,
+		&.is-vertically-aligned-bottom {
+			.bw-icon-box__content {
+				display: flex;
+				flex-direction: column;
+				gap: token('spacing--small');
+			}
+			// The heading is now a flex child, so its grid vertical-centre would become a horizontal
+			// centre - reset it.
+			.bw-icon-box__heading {
+				align-self: auto;
+			}
+		}
+		&.is-vertically-aligned-top .bw-icon-box__icon {
+			align-self: start;
+		}
+		&.is-vertically-aligned-center .bw-icon-box__icon {
+			align-self: center;
+		}
+		&.is-vertically-aligned-bottom .bw-icon-box__icon {
+			align-self: end;
+		}
+	}
+
+	&.is-position-left {
+		grid-template-columns: auto 1fr;
+
+		.bw-icon-box__icon {
+			grid-column: 1;
+		}
+		.bw-icon-box__content,
+		.bw-icon-box__heading,
+		.bw-icon-box__text,
+		.bw-icon-box__link {
+			grid-column: 2;
+		}
+	}
+
+	&.is-position-right {
+		grid-template-columns: 1fr auto;
+
+		.bw-icon-box__icon {
+			grid-column: 2;
+		}
+		.bw-icon-box__content,
+		.bw-icon-box__heading,
+		.bw-icon-box__text,
+		.bw-icon-box__link {
+			grid-column: 1;
+		}
+	}
+
+	// Fallback trim for browsers that predate text-box-trim but understand the cap/lh font units
+	// (invalid there too = ignored, leaving plain line-box centring).
+	@supports not (text-box-trim: trim-both) {
+		&.is-position-left .bw-icon-box__heading,
+		&.is-position-right .bw-icon-box__heading {
+			margin-block: calc(0.5cap - 0.5lh);
+		}
+	}
+
+	&__icon {
+		flex-shrink: 0;
+		color: token('color--link');
+		line-height: 0;
+
+		// Icon size presets map to the theme's FLUID spacing scale (clamp-based, so the icon
+		// scales with the viewport - no fixed px). Default Large keeps the original size.
+		svg {
+			display: block;
+			width: token('spacing--x-large');
+			height: token('spacing--x-large');
+		}
+
+		// wp_get_icon() strips the SVG fill; forward the icon's token colour via currentColor so
+		// it stays adaptive. :not([fill]) leaves a pasted Custom SVG's own fill alone.
+		svg:not([fill]) {
+			fill: currentColor;
+		}
+	}
+
+	&.is-icon-x-small &__icon svg {
+		width: token('spacing--small');
+		height: token('spacing--small');
+	}
+
+	&.is-icon-small &__icon svg {
+		width: token('spacing--medium');
+		height: token('spacing--medium');
+	}
+
+	&.is-icon-medium &__icon svg {
+		width: token('spacing--large');
+		height: token('spacing--large');
+	}
+
+	&.is-icon-large &__icon svg {
+		width: token('spacing--x-large');
+		height: token('spacing--x-large');
+	}
+
+	&.is-icon-x-large &__icon svg {
+		width: token('spacing--xx-large');
+		height: token('spacing--xx-large');
+	}
+
+	&__heading {
+		margin: 0;
+	}
+
+	// The heading follows the icon in source order, so the theme's rhythm rule
+	// (.wp-site-blocks :where(h3,h4):not(:first-child), 0,2,0) can add a large margin-top. The
+	// layout owns its own spacing (flex gap / grid gap); a (0,3,0) selector beats that rule.
+	& &__heading:not(:first-child) {
+		margin-top: 0;
+	}
+
+	&__text {
+		margin: 0;
+	}
+
+	&__link {
+		align-self: start;
+		justify-self: start;
+	}
+
+	&.is-position-top.is-align-center &__link {
+		align-self: center;
+	}
+}

@@ -1,0 +1,16 @@
+/.git
+/.github
+/.wordpress-org
+/node_modules
+/vendor
+/scripts
+/config
+.distignore
+.gitignore
+.prettierignore
+phpcs.xml.dist
+composer.json
+composer.lock
+package.json
+package-lock.json
+vite.config.js

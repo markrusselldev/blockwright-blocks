@@ -1,0 +1,32 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "blockwright/stat",
+	"version": "1.1.0",
+	"title": "Stat Counter",
+	"category": "design",
+	"icon": "chart-bar",
+	"description": "A single headline number with a label - optionally counting up when it scrolls into view. For results, KPIs, and trust stats.",
+	"keywords": [ "stat", "counter", "number", "metric", "kpi", "count up" ],
+	"textdomain": "blockwright-blocks",
+	"attributes": {
+		"prefix": { "type": "string", "default": "" },
+		"value": { "type": "string", "default": "250" },
+		"suffix": { "type": "string", "default": "+" },
+		"label": { "type": "rich-text", "source": "rich-text", "selector": ".bw-stat__label" },
+		"animate": { "type": "boolean", "default": true },
+		"alignment": { "type": "string", "default": "center" }
+	},
+	"supports": {
+		"anchor": true,
+		"align": [ "wide", "full" ],
+		"html": false,
+		"color": { "gradients": true, "__experimentalDefaultControls": { "background": true, "text": true } },
+		"spacing": { "padding": true, "margin": [ "top", "bottom" ], "blockGap": true, "__experimentalDefaultControls": { "blockGap": true } },
+		"__experimentalBorder": { "color": true, "radius": true, "style": true, "width": true },
+		"typography": { "fontSize": true, "lineHeight": true, "__experimentalFontFamily": true, "__experimentalFontWeight": true, "__experimentalDefaultControls": { "fontSize": true } }
+	},
+	"editorScript": "file:./index.js",
+	"style": "file:./style-index.css",
+	"viewScript": "file:./view.js"
+}
