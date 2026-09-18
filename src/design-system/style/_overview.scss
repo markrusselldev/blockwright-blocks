@@ -1,0 +1,48 @@
+/**
+ * Overview module: the hub of module cards + the shared restore/Autowright cards.
+ */
+
+@use "vars" as *;
+
+.bw-ds-cards {
+	display: flex;
+	gap: 18px;
+	flex-wrap: wrap;
+}
+
+.bw-ds-module-card {
+	flex: 1 1 300px;
+	min-width: 260px;
+}
+
+.bw-ds-card-title {
+	margin: 0 0 8px;
+	font-size: 15px;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.bw-ds-card-desc {
+	margin: 0 0 14px;
+	color: $ink-muted;
+	font-size: 13px;
+
+	// Last element in a card (nothing follows) - drop the trailing gap.
+	&.is-flush {
+		margin-bottom: 0;
+	}
+}
+
+.bw-ds-overview-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+	gap: 18px;
+	margin-top: 18px;
+}
+
+.bw-ds-restore-intro {
+	margin: 0 0 12px;
+	color: $ink-muted;
+	font-size: 12px;
+}

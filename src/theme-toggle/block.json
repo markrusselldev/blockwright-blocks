@@ -7,7 +7,7 @@
 	"category": "design",
 	"icon": "visibility",
 	"description": "A visitor control that flips between light and dark. The site is adaptive by default; a choice lasts the session, then returns to the visitor's system setting. Place it in the header.",
-	"keywords": [ "dark mode", "light", "theme", "toggle", "colour scheme", "sun", "moon" ],
+	"keywords": [ "dark mode", "light", "theme", "toggle", "color scheme", "sun", "moon" ],
 	"textdomain": "blockwright-blocks",
 	"supports": {
 		"anchor": true,

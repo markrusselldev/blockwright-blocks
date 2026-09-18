@@ -1,0 +1,69 @@
+/**
+ * Design-system control plane - admin screen styling (index).
+ *
+ * WP-admin CHROME for the design tool (Appearance -> Design). This admin UI is NOT part of any
+ * site's design system, so it does NOT use the theme's front-end tokens - its layout px and
+ * status colors are one-off admin values (see style/_vars.scss).
+ *
+ * STATIC styling lives in the partials below, one per module (mirroring the module architecture -
+ * add style/_typography.scss etc. as those modules ship). Only genuinely DYNAMIC values - the
+ * generated palette colors the live preview paints, which recompute as the user drags a control -
+ * stay as inline `style` in the component; no static stylesheet can hold a value that changes at
+ * runtime.
+ *
+ * Built by wp-scripts to build/design-system/style-index.css; enqueued from inc/admin-page.php.
+ */
+
+@use "style/shared";
+@use "style/overview";
+@use "style/color";
+
+// --- App shell (not module-specific) ---------------------------------------
+
+.bw-ds-app {
+	max-width: 1400px;
+
+	// Keep the module tabs on one row (scroll rather than wrap).
+	.components-tab-panel__tabs {
+		flex-wrap: nowrap;
+		overflow-x: auto;
+	}
+
+	// The RangeControl number field: compact, centered, no min-width blowout.
+	.components-range-control__number {
+		width: 50px !important;
+		min-width: 0 !important;
+		flex: 0 0 auto !important;
+
+		.components-input-control__container,
+		.components-input-control__input {
+			width: 100% !important;
+			min-width: 0 !important;
+		}
+
+		.components-input-control__input {
+			padding: 2px 4px !important;
+			text-align: center;
+		}
+	}
+}
+
+// The brand-color Dropdown is a block so its toggle fills the rail width.
+.bw-color-dropdown {
+	display: block;
+
+	> .components-dropdown {
+		display: block;
+	}
+}
+
+.bw-ds-tabpanel-body {
+	padding-top: 20px;
+}
+
+// The page intro paragraph (rendered by PHP, above the React root). text-wrap:balance evens
+// the two sentences; the measure is capped so the second wraps predictably.
+.bw-ds-intro {
+	max-width: 46em;
+	text-wrap: balance;
+}

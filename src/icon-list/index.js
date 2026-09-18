@@ -7,30 +7,35 @@
  */
 import './style.scss';
 import { registerBlockType } from '@wordpress/blocks';
-import { useBlockProps, useInnerBlocksProps, InnerBlocks } from '@wordpress/block-editor';
+import {
+	useBlockProps,
+	useInnerBlocksProps,
+	InnerBlocks,
+} from '@wordpress/block-editor';
 import { createElement as el } from '@wordpress/element';
 import metadata from './block.json';
 
-const ALLOWED = [ 'blockwright/icon-list-item' ];
+const ALLOWED = ['blockwright/icon-list-item'];
 const TEMPLATE = [
-	[ 'blockwright/icon-list-item', { text: 'First list item' } ],
-	[ 'blockwright/icon-list-item', { text: 'Second list item' } ],
-	[ 'blockwright/icon-list-item', { text: 'Third list item' } ],
+	['blockwright/icon-list-item', { text: 'First list item' }],
+	['blockwright/icon-list-item', { text: 'Second list item' }],
+	['blockwright/icon-list-item', { text: 'Third list item' }],
 ];
 
-registerBlockType( metadata.name, {
-	edit() {
-		const blockProps = useBlockProps( { className: 'bw-icon-list' } );
-		const innerProps = useInnerBlocksProps( blockProps, {
-			allowedBlocks: ALLOWED,
-			template: TEMPLATE,
-			templateLock: false,
-			orientation: 'vertical',
-		} );
-		return el( 'ul', innerProps );
-	},
-	save() {
-		const blockProps = useBlockProps.save( { className: 'bw-icon-list' } );
-		return el( 'ul', blockProps, el( InnerBlocks.Content ) );
-	},
-} );
+function Edit() {
+	const blockProps = useBlockProps({ className: 'bw-icon-list' });
+	const innerProps = useInnerBlocksProps(blockProps, {
+		allowedBlocks: ALLOWED,
+		template: TEMPLATE,
+		templateLock: false,
+		orientation: 'vertical',
+	});
+	return el('ul', innerProps);
+}
+
+function save() {
+	const blockProps = useBlockProps.save({ className: 'bw-icon-list' });
+	return el('ul', blockProps, el(InnerBlocks.Content));
+}
+
+registerBlockType(metadata.name, { edit: Edit, save });

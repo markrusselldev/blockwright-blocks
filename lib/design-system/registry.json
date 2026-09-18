@@ -1,0 +1,12 @@
+{
+	"version": 1,
+	"categories": {
+		"color": {
+			"label": "Color scheme",
+			"generator": "color",
+			"path": [ "settings", "color", "palette" ],
+			"writeMode": "replace",
+			"note": "The whole site palette. WordPress replaces the palette as one array per origin, so the tool always writes the full set of colors, never a subset."
+		}
+	}
+}

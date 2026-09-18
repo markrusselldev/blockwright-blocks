@@ -10,31 +10,31 @@
 // Usage:  @use '../tokens' as *;   gap: token('spacing--small');
 //   -> var(--wp--preset--spacing--small, 1rem)
 
-@use 'sass:map';
+@use "sass:map";
 
 // theme.json PRESET tokens (settings.*.palette / spacing / typography) -> --wp--preset--*.
 $preset: (
-	'spacing--xxx-small': 0.25rem,
-	'spacing--xx-small': 0.5rem,
-	'spacing--x-small': clamp(0.75rem, 0.6875rem + 0.3125vw, 0.9375rem),
-	'spacing--small': clamp(1rem, 0.9167rem + 0.4167vw, 1.25rem),
-	'spacing--medium': clamp(1.5rem, 1.375rem + 0.625vw, 1.875rem),
-	'spacing--large': clamp(2rem, 1.8333rem + 0.8333vw, 2.5rem),
-	'spacing--x-large': clamp(3rem, 2.75rem + 1.25vw, 3.75rem),
-	'spacing--xx-large': clamp(4rem, 3.6667rem + 1.6667vw, 5rem),
-	'color--link': currentColor,
-	'color--surface-2': #f3f4f6, // token-exempt: this map IS the single source of the literal fallbacks the distributable-plugin rule requires.
-	'color--border-default': currentColor,
-	'color--text-2': inherit,
-	'font-size--small': 0.875rem,
-	'font-size--xxxl': 3rem,
-	'border-radius--m': 0.25rem,
+	"spacing--xxx-small": 0.25rem,
+	"spacing--xx-small": 0.5rem,
+	"spacing--x-small": clamp(0.75rem, 0.6875rem + 0.3125vw, 0.9375rem),
+	"spacing--small": clamp(1rem, 0.9167rem + 0.4167vw, 1.25rem),
+	"spacing--medium": clamp(1.5rem, 1.375rem + 0.625vw, 1.875rem),
+	"spacing--large": clamp(2rem, 1.8333rem + 0.8333vw, 2.5rem),
+	"spacing--x-large": clamp(3rem, 2.75rem + 1.25vw, 3.75rem),
+	"spacing--xx-large": clamp(4rem, 3.6667rem + 1.6667vw, 5rem),
+	"color--link": currentColor,
+	"color--surface-2": #f3f4f6, // token-exempt: this map IS the single source of the literal fallbacks the distributable-plugin rule requires.
+	"color--border-default": currentColor,
+	"color--text-2": inherit,
+	"font-size--small": 0.875rem,
+	"font-size--xxxl": 3rem,
+	"border-radius--m": 0.25rem,
 );
 
 // theme.json CUSTOM tokens (settings.custom.*) -> --wp--custom--*.
 $custom: (
-	'border--width--thin': 1px,
-	'border--width--medium': 2px,
+	"border--width--thin": 1px,
+	"border--width--medium": 2px,
 );
 
 @function token($name) {

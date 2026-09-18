@@ -1,5 +1,5 @@
 /**
- * blockwright/theme-toggle - front-end behaviour.
+ * blockwright/theme-toggle - front-end behavior.
  *
  * A binary light / dark override for the visitor. The site is adaptive by default (it follows the
  * OS setting); a click flips it to the opposite of what is showing, and the choice is stored in
@@ -10,82 +10,87 @@
  * both in the document head before paint (no flash); this script keeps them in sync and handles
  * clicks. Vanilla JS.
  */
-( function () {
-	var buttons = document.querySelectorAll( '.bw-theme-toggle' );
-	if ( ! buttons.length ) {
+(function () {
+	const buttons = document.querySelectorAll('.bw-theme-toggle');
+	if (!buttons.length) {
 		return;
 	}
 
-	var KEY = 'bw-color-scheme';
-	var root = document.documentElement;
+	const KEY = 'bw-color-scheme';
+	const root = document.documentElement;
 
 	function stored() {
 		try {
-			var v = sessionStorage.getItem( KEY );
+			const v = sessionStorage.getItem(KEY);
 			return v === 'light' || v === 'dark' ? v : null;
-		} catch ( e ) {
+		} catch {
 			return null;
 		}
 	}
 
 	function osDark() {
-		return !! ( window.matchMedia && window.matchMedia( '(prefers-color-scheme: dark)' ).matches );
+		return !!(
+			window.matchMedia &&
+			window.matchMedia('(prefers-color-scheme: dark)').matches
+		);
 	}
 
 	function effective() {
-		return stored() || ( osDark() ? 'dark' : 'light' );
+		return stored() || (osDark() ? 'dark' : 'light');
 	}
 
-	function persist( mode ) {
+	function persist(mode) {
 		try {
-			if ( mode === 'light' || mode === 'dark' ) {
-				sessionStorage.setItem( KEY, mode );
+			if (mode === 'light' || mode === 'dark') {
+				sessionStorage.setItem(KEY, mode);
 			} else {
-				sessionStorage.removeItem( KEY );
+				sessionStorage.removeItem(KEY);
 			}
-		} catch ( e ) {}
+		} catch {}
 	}
 
 	function apply() {
-		var override = stored();
+		const override = stored();
 		root.style.colorScheme = override || '';
-		if ( override ) {
-			root.setAttribute( 'data-bw-scheme', override );
+		if (override) {
+			root.setAttribute('data-bw-scheme', override);
 		} else {
-			root.removeAttribute( 'data-bw-scheme' );
+			root.removeAttribute('data-bw-scheme');
 		}
 	}
 
 	function sync() {
-		var action = effective() === 'dark' ? 'light' : 'dark';
-		var label =
+		const action = effective() === 'dark' ? 'light' : 'dark';
+		const label =
 			action === 'dark'
-				? 'Switch to the dark colour scheme'
-				: 'Switch to the light colour scheme';
-		buttons.forEach( function ( btn ) {
-			btn.setAttribute( 'aria-label', label );
-		} );
+				? 'Switch to the dark color scheme'
+				: 'Switch to the light color scheme';
+		buttons.forEach(function (btn) {
+			btn.setAttribute('aria-label', label);
+		});
 	}
 
 	apply();
 	sync();
 
 	// When there is no explicit choice, keep the action icon and label in step with the OS.
-	if ( window.matchMedia ) {
+	if (window.matchMedia) {
 		try {
-			window.matchMedia( '(prefers-color-scheme: dark)' ).addEventListener( 'change', function () {
-				if ( ! stored() ) {
-					sync();
-				}
-			} );
-		} catch ( e ) {}
+			window
+				.matchMedia('(prefers-color-scheme: dark)')
+				.addEventListener('change', function () {
+					if (!stored()) {
+						sync();
+					}
+				});
+		} catch {}
 	}
 
-	buttons.forEach( function ( btn ) {
-		btn.addEventListener( 'click', function () {
-			persist( effective() === 'dark' ? 'light' : 'dark' );
+	buttons.forEach(function (btn) {
+		btn.addEventListener('click', function () {
+			persist(effective() === 'dark' ? 'light' : 'dark');
 			apply();
 			sync();
-		} );
-	} );
-} )();
+		});
+	});
+})();

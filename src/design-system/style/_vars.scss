@@ -1,0 +1,38 @@
+/**
+ * Design-system admin chrome values (WP-admin conventions, NOT theme tokens).
+ *
+ * This screen is admin UI, not part of any site's design system, so it does not consume the
+ * theme's front-end tokens. These are its own
+ * one-off chrome values, single-sourced here so the partials stay in sync.
+ */
+
+// Admin text / status colors.
+$ink-muted: #646970; // WP admin secondary text
+$ok: #0a7d33;
+$err: #b32d2e;
+
+// Status-pill tints (Overview module cards: Ready / Coming soon).
+$pill-ready-bg: #e6f4ea;
+$pill-ready-border: #b7e0c4;
+$pill-soon-bg: #fcf0e6;
+$pill-soon-text: #8a5a00;
+$pill-soon-border: #f0d9c0;
+
+// Chrome fills / shadows.
+$advanced-fill: #fafafa; // Advanced panel: a hair off-white toward the admin page gray
+$panel-tint-soft: rgba(127, 127, 127, 0.05); // coming-soon frame
+$panel-tint: rgba(127, 127, 127, 0.06); // independent-colors box
+$toast-bg: #1e1e1e;
+$toast-fg: #fff;
+$shadow-chip-hover: 0 2px 8px rgba(0, 0, 0, 0.18);
+// Neutral fill for the picker's saturation square on an achromatic (grayscale) pick, replacing
+// react-colorful's red hsl(0,100%,50%) default so a gray reads as a grayscale value ramp.
+$picker-neutral-square: hsl(0 0% 50%);
+
+// Neutral hairlines / fills, kept per-alpha to preserve the existing look exactly.
+$line-15: rgba(128, 128, 128, 0.15);
+$line-20: rgba(128, 128, 128, 0.2);
+$line-25: rgba(128, 128, 128, 0.25);
+$line-30: rgba(128, 128, 128, 0.3);
+$line-35: rgba(128, 128, 128, 0.35);
+$line-50: rgba(128, 128, 128, 0.5);

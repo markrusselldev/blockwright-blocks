@@ -1,6 +1,6 @@
 <?php
 /**
- * No-flash colour-scheme preference.
+ * No-flash color-scheme preference.
  *
  * The Light / Dark Toggle block (blocks/theme-toggle/) stores a visitor's session choice in
  * sessionStorage and overrides `color-scheme` (plus `data-bw-scheme`) on <html>, which the

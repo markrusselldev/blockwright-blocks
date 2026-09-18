@@ -1,15 +1,14 @@
-
 // blockwright/stamp - a rotated corner badge ("rubber stamp"). Enqueued via the block's `style`
 // handle (front end + editor iframe). The block supplies per instance: TEXT (RichText), CORNER
 // (--tr/--tl/--br/--bl), ROTATION (--bw-stamp-rot), OFFSET (--bw-stamp-x/y, only when the sliders
-// move; otherwise the tuned defaults below apply), BORDER type modifier, and COLOUR / border
-// colour+radius / font size (core block supports). Design values via token() (_tokens.scss).
+// move; otherwise the tuned defaults below apply), BORDER type modifier, and COLOR / border
+// color+radius / font size (core block supports). Design values via token() (_tokens.scss).
 //
 // There is NO fill - the background is transparent so the card shows through; only text + frame
 // read. The stamp's DIRECT parent is the positioning context via :has() on the front end (in the
 // editor, core already makes every block wrapper relative); don't give it overflow:hidden or the
 // overhanging corner clips.
-@use '../tokens' as *;
+@use "../tokens" as *;
 
 // The tuned default overhang: how far the rotated corner peeks past the container edge. This is
 // the stamp's own COMPONENT GEOMETRY (a position, not layout spacing), so it is decoupled from the
@@ -31,10 +30,10 @@ $overhang-x: -0.25rem; // token-exempt: stamp overhang, component geometry (4px)
 	transform: rotate(var(--bw-stamp-rot, 18deg));
 	transform-origin: center;
 	background-color: transparent;
-	// Frame: width fixed here; colour + radius come from the block's border controls (fall back
-	// to currentColor = the default colour below / medium radius); style comes from the border-type modifier below.
-	border-width: token('border--width--medium');
-	border-radius: token('border-radius--m');
+	// Frame: width fixed here; color + radius come from the block's border controls (fall back
+	// to currentColor = the default color below / medium radius); style comes from the border-type modifier below.
+	border-width: token("border--width--medium");
+	border-radius: token("border-radius--m");
 	padding: 0.25rem 0.5rem; // token-exempt: stamp badge geometry (tuned), decoupled from the spacing scale
 	font-weight: 800;
 	letter-spacing: 0.12em;
@@ -42,23 +41,23 @@ $overhang-x: -0.25rem; // token-exempt: stamp overhang, component geometry (4px)
 	line-height: 1.1;
 	pointer-events: none;
 
-	// Default colour = the brand link token, so an untouched stamp re-hues with the visitor's
-	// colour variation (same convention as the icon blocks). The border + inner frame inherit it
+	// Default color = the brand link token, so an untouched stamp re-hues with the visitor's
+	// color variation (same convention as the icon blocks). The border + inner frame inherit it
 	// via currentColor. DOUBLED class (0,2,0): the stamp is a <p>, and the theme's
-	// `:root :where(p)` colour rule (0,1,0, :where() is zero) ties a single `.bw-stamp` and wins
-	// on source order - the same trap the Stat block's __value documents. A per-instance colour
-	// set in the block controls still overrides (WP colour classes are !important).
+	// `:root :where(p)` color rule (0,1,0, :where() is zero) ties a single `.bw-stamp` and wins
+	// on source order - the same trap the Stat block's __value documents. A per-instance color
+	// set in the block controls still overrides (WP color classes are !important).
 	&#{&} {
-		color: token('color--link');
+		color: token("color--link");
 	}
 
 	// Inner frame - the "double border". Hidden by default; the double border-type shows it.
-	// Inherits the block's border colour/style/radius so it tracks the controls.
+	// Inherits the block's border color/style/radius so it tracks the controls.
 	&::before {
 		content: "";
 		position: absolute;
 		inset: 0.125rem; // token-exempt: stamp inner-frame gap (tuned), decoupled from the spacing scale
-		border-width: token('border--width--thin');
+		border-width: token("border--width--thin");
 		border-style: inherit;
 		border-color: inherit;
 		border-radius: inherit;

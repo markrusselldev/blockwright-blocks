@@ -11,9 +11,19 @@
  * search-as-you-type mode is the later add for a large set. In the canvas the chosen icon is shown
  * by Preview, which fetches the single SVG by name; a Custom SVG overrides it.
  */
-import { createElement as el, useState, useEffect, RawHTML } from '@wordpress/element';
+import {
+	createElement as el,
+	useState,
+	useEffect,
+	RawHTML,
+} from '@wordpress/element';
 import apiFetch from '@wordpress/api-fetch';
-import { BaseControl, Button, Spinner, SearchControl } from '@wordpress/components';
+import {
+	BaseControl,
+	Button,
+	Spinner,
+	SearchControl,
+} from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 
 const cache = {};
@@ -21,22 +31,24 @@ let collectionPromise;
 
 // Load the Blockwright collection once, with SVG content, for the grid.
 function loadCollection() {
-	if ( collectionPromise ) {
+	if (collectionPromise) {
 		return collectionPromise;
 	}
-	collectionPromise = apiFetch( { path: '/wp/v2/icons/blockwright' } )
-		.then( ( list ) => {
-			list.forEach( ( i ) => { cache[ i.name ] = i.content || ''; } );
+	collectionPromise = apiFetch({ path: '/wp/v2/icons/blockwright' })
+		.then((list) => {
+			list.forEach((i) => {
+				cache[i.name] = i.content || '';
+			});
 			return list;
-		} )
-		.catch( () => [] );
+		})
+		.catch(() => []);
 	return collectionPromise;
 }
 
 // The icon-picker GRID is editor-only admin tool UI: it renders in the block inspector and never
 // on the front end (the chosen icon renders front-end via the block's tokened style.scss, not
 // these objects). So it is styled with WP's ADMIN design vars (--wp-admin-theme-color, the
-// components colour scale) plus tool-geometry constants - NOT theme --wp--preset-- tokens, which
+// components color scale) plus tool-geometry constants - NOT theme --wp--preset-- tokens, which
 // are the wrong semantic layer for a tool's own chrome. The geometry literals carry token-exempt
 // (component/tool geometry, the same class our linter already exempts for the timeline marker).
 const gridStyle = {
@@ -62,9 +74,9 @@ const cellStyle = {
 	height: '2.25rem', // token-exempt: picker cell size (editor tool UI)
 	minWidth: 0,
 };
-// Flex-centre the inner <svg>: the raw icon markup renders `display:inline`, so it
-// baseline-aligns (sits ~2px high) rather than centring in the cell. Centring the wrapper
-// puts the glyph dead-centre under the selection ring.
+// Flex-center the inner <svg>: the raw icon markup renders `display:inline`, so it
+// baseline-aligns (sits ~2px high) rather than centering in the cell. Centering the wrapper
+// puts the glyph dead-center under the selection ring.
 const svgStyle = {
 	display: 'flex',
 	alignItems: 'center',
@@ -83,41 +95,45 @@ const svgStyle = {
  * @param {string}   props.label    Control label.
  * @return {WPElement} The grid control.
  */
-export function Control( { value, onChange, label } ) {
-	const [ icons, setIcons ] = useState( null );
-	const [ query, setQuery ] = useState( '' );
-	useEffect( () => {
+export function Control({ value, onChange, label }) {
+	const [icons, setIcons] = useState(null);
+	const [query, setQuery] = useState('');
+	useEffect(() => {
 		let cancelled = false;
-		loadCollection().then( ( list ) => {
-			if ( ! cancelled ) {
-				setIcons( list );
+		loadCollection().then((list) => {
+			if (!cancelled) {
+				setIcons(list);
 			}
-		} );
-		return () => { cancelled = true; };
-	}, [] );
+		});
+		return () => {
+			cancelled = true;
+		};
+	}, []);
 
 	let body;
-	if ( icons === null ) {
-		body = el( Spinner );
+	if (icons === null) {
+		body = el(Spinner);
 	} else {
 		const q = query.trim().toLowerCase();
-		const shown = q ? icons.filter( ( i ) => i.label.toLowerCase().includes( q ) ) : icons;
+		const shown = q
+			? icons.filter((i) => i.label.toLowerCase().includes(q))
+			: icons;
 		body = el(
 			'div',
 			{},
 			// Search filters the grid (browse it, or type to narrow). At a large set this is what
 			// keeps the picker usable; the grid stays the primary browse surface.
-			el( SearchControl, {
+			el(SearchControl, {
 				__nextHasNoMarginBottom: true,
 				value: query,
 				onChange: setQuery,
-				placeholder: __( 'Search icons', 'blockwright-blocks' ),
-			} ),
+				placeholder: __('Search icons', 'blockwright-blocks'),
+			}),
 			el(
 				'div',
 				{ style: gridStyle },
 				shown.length
-					? shown.map( ( i ) =>
+					? shown.map((i) =>
 							el(
 								Button,
 								{
@@ -129,20 +145,38 @@ export function Control( { value, onChange, label } ) {
 									// indicator, not our old ring stacked under WP's focus ring.
 									label: i.label,
 									isPressed: value === i.name,
-									onClick: () => onChange( i.name ),
+									onClick: () => onChange(i.name),
 									style: cellStyle,
 								},
-								el( 'span', { style: svgStyle, dangerouslySetInnerHTML: { __html: i.content } } )
+								el('span', {
+									style: svgStyle,
+									dangerouslySetInnerHTML: {
+										__html: i.content,
+									},
+								})
 							)
-					  )
-					: el( 'p', { style: { padding: '8px', margin: 0, opacity: 0.7 } }, __( 'No icons match.', 'blockwright-blocks' ) ) // token-exempt: picker empty-state inset (editor tool UI)
+						)
+					: el(
+							'p',
+							{
+								style: {
+									padding: '8px', // token-exempt: picker empty-state inset, editor tool UI (no theme token in this scope)
+									margin: 0,
+									opacity: 0.7,
+								},
+							},
+							__('No icons match.', 'blockwright-blocks')
+						)
 			)
 		);
 	}
 
 	return el(
 		BaseControl,
-		{ __nextHasNoMarginBottom: true, label: label || __( 'Icon', 'blockwright-blocks' ) },
+		{
+			__nextHasNoMarginBottom: true,
+			label: label || __('Icon', 'blockwright-blocks'),
+		},
 		body
 	);
 }
@@ -157,35 +191,37 @@ export function Control( { value, onChange, label } ) {
  * @param {string} props.className Class for the wrapping <span>.
  * @return {WPElement} The icon span.
  */
-export function Preview( { name, customSvg, className } ) {
-	const [ svg, setSvg ] = useState( customSvg || cache[ name ] || '' );
-	useEffect( () => {
-		if ( customSvg ) {
-			setSvg( customSvg );
+export function Preview({ name, customSvg, className }) {
+	const [svg, setSvg] = useState(customSvg || cache[name] || '');
+	useEffect(() => {
+		if (customSvg) {
+			setSvg(customSvg);
 			return;
 		}
-		if ( ! name ) {
-			setSvg( '' );
+		if (!name) {
+			setSvg('');
 			return;
 		}
-		if ( cache[ name ] !== undefined ) {
-			setSvg( cache[ name ] );
+		if (cache[name] !== undefined) {
+			setSvg(cache[name]);
 			return;
 		}
 		let cancelled = false;
-		apiFetch( { path: '/wp/v2/icons/' + name } )
-			.then( ( res ) => {
-				cache[ name ] = res && res.content ? res.content : '';
-				if ( ! cancelled ) {
-					setSvg( cache[ name ] );
+		apiFetch({ path: '/wp/v2/icons/' + name })
+			.then((res) => {
+				cache[name] = res && res.content ? res.content : '';
+				if (!cancelled) {
+					setSvg(cache[name]);
 				}
-			} )
-			.catch( () => {
-				if ( ! cancelled ) {
-					setSvg( '' );
+			})
+			.catch(() => {
+				if (!cancelled) {
+					setSvg('');
 				}
-			} );
-		return () => { cancelled = true; };
-	}, [ name, customSvg ] );
-	return el( 'span', { className }, svg ? el( RawHTML, {}, svg ) : null );
+			});
+		return () => {
+			cancelled = true;
+		};
+	}, [name, customSvg]);
+	return el('span', { className }, svg ? el(RawHTML, {}, svg) : null);
 }
