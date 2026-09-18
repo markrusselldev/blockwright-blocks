@@ -1,0 +1,801 @@
+/**
+ * Color module: the controls rail, the Advanced panel, the live preview card, the token
+ * inventory table, and the restore-points list.
+ *
+ * Only STATIC styling lives here. Every color the live preview paints is a generated palette
+ * value that recomputes as the user drags a control, so those stay as inline `style` in the
+ * component - a static stylesheet cannot hold a runtime value. Where a rule needs the dynamic
+ * color (e.g. `border: 1px solid` with no color), the component supplies it inline.
+ */
+
+@use "vars" as *;
+
+// --- Layout ----------------------------------------------------------------
+
+.bw-ds-color {
+	display: flex;
+	gap: 32px;
+	align-items: flex-start;
+	flex-wrap: wrap;
+}
+
+// The controls rail is a STABLE width so the preset chips below never reflow between schemes and
+// the sidebar never grows. A flex item's automatic minimum (min-width:auto) would otherwise pin
+// the rail to its content min-content - and the safe-zone status word varies by scheme - so
+// min-width:0 holds the rail at its flex-basis regardless of the status text. Keep the safe-zone
+// status labels short enough to fit the narrow column (see SafeZone: "Gray"/"Fill only"/"Text or
+// fill") so none overflows at 240px.
+.bw-ds-rail {
+	flex: 1 1 240px;
+	min-width: 0;
+	max-width: 300px;
+	position: sticky;
+	top: 40px;
+}
+
+.bw-ds-field {
+	margin-bottom: 18px;
+}
+
+.bw-ds-field-head {
+	display: flex;
+	// Group the hex next to the heading (not pushed to the far rail edge, where it floated over
+	// the empty space beside the smaller 150px swatch).
+	justify-content: flex-start;
+	gap: 8px;
+	align-items: baseline;
+	margin-bottom: 6px;
+}
+
+.bw-ds-label {
+	font-weight: 600;
+	font-size: 13px;
+}
+
+.bw-ds-hex {
+	font-size: 12px;
+	opacity: 0.7;
+}
+
+// The brand-color swatch toggle (a moderate square preview + picker trigger; the picker itself
+// opens in its own popover, so this size is independent of it). Color is inline (dynamic).
+.bw-ds-swatch-toggle {
+	width: 120px;
+	aspect-ratio: 1 / 1;
+	border-radius: 8px;
+	border: none;
+	box-shadow: inset 0 0 0 1px $line-35;
+	cursor: pointer;
+	display: block;
+	padding: 0;
+}
+
+.bw-ds-picker-pop {
+	padding: 8px;
+
+	// An achromatic pick (grayscale scheme) has no hue, but react-colorful's saturation square
+	// paints hsl(hue,100%,50%) inline and defaults hue to 0 - so a gray shows a RED square. Override
+	// the inline color to neutral so the square reads as a grayscale value ramp; the black/white
+	// gradients on top stay. The class drops the instant chroma rises, restoring the hued square.
+	&.is-achromatic .react-colorful__saturation {
+		background-color: $picker-neutral-square !important;
+	}
+}
+
+// Note under the swatch when a near-neutral color is picked: explains the grayscale result.
+// Peer of .bw-ds-sublabel ("Or start from a preset") - a short guiding label, so it MATCHES that
+// treatment exactly (12px / 600 / opacity 0.7), not its own muted style.
+.bw-ds-seed-note {
+	margin: 8px 0 0;
+	font-size: 12px;
+	font-weight: 600;
+	opacity: 0.7;
+	line-height: 1.4;
+}
+
+// Swatch + safe-zone indicator, side by side (the picker popover opens BELOW the swatch, so the
+// indicator sits to its RIGHT where it stays visible while picking).
+.bw-ds-swatch-row {
+	display: flex;
+	gap: 14px;
+	align-items: flex-start;
+}
+.bw-ds-safezone {
+	// The WCAG-contrast indicator, to the RIGHT of the swatch: a title on top, then the slim
+	// lightness strip + the per-mode ratios. Top-aligned and shorter than the swatch (it need not
+	// match its height), which leaves room for the title above the indicators.
+	display: flex;
+	flex-direction: column;
+	flex: 1;
+	min-width: 0;
+}
+.bw-ds-safezone-title {
+	font-size: 11px;
+	color: $ink-muted;
+	text-transform: uppercase;
+	letter-spacing: 0.03em;
+	margin-bottom: 8px;
+}
+.bw-ds-safezone-ind {
+	display: flex;
+	gap: 8px;
+}
+// Slim vertical lightness strip of the brand hue: dark at the bottom, light at the top. The safe
+// zone (>=3:1 on both surfaces) stays bright; outside it is dimmed. A marker shows the current color.
+.bw-ds-safezone-strip {
+	position: relative;
+	width: 12px;
+	height: 74px;
+	flex: none;
+	border-radius: 5px;
+	box-shadow: inset 0 0 0 1px $line-35;
+	overflow: hidden;
+}
+.bw-ds-safezone-dim {
+	position: absolute;
+	left: 0;
+	right: 0;
+	background: rgba(0, 0, 0, 0.42);
+}
+.bw-ds-safezone-marker {
+	// Dual-contrast marker over a variable-color track: white core + dark outline so it stays visible
+	// on both the light top and dark bottom of the strip. 2px keeps it crisp against the narrow band.
+	position: absolute;
+	left: 0;
+	right: 0;
+	height: 2px;
+	margin-top: -1px;
+	background: #fff;
+	box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.65);
+}
+// Per-mode legibility: a small live "Aa" of the brand color on that surface + its WCAG ratio.
+.bw-ds-safezone-modes {
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	gap: 12px;
+}
+.bw-ds-mode {
+	display: flex;
+	align-items: center;
+	gap: 7px;
+}
+.bw-ds-mode-aa {
+	width: 26px;
+	height: 26px;
+	flex: none;
+	border-radius: 5px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-weight: 700;
+	font-size: 13px;
+	box-shadow: inset 0 0 0 1px $line-15;
+}
+.bw-ds-mode-ratio {
+	font-size: 12px;
+	font-variant-numeric: tabular-nums;
+	font-weight: 600;
+
+	// Green/red REINFORCES the pass/fail the Aa sample already shows - never the sole cue.
+	&.is-pass {
+		color: $ok;
+	}
+
+	&.is-fail {
+		color: $err;
+	}
+}
+
+// Heads-up when the entered brand color was contrast-nudged for a mode, or is near-neon.
+// Amber, not an error - the color still works, we are just explaining what happens.
+.bw-ds-seed-warn {
+	margin: 8px 0 0;
+	padding: 8px 10px;
+	font-size: 12px;
+	line-height: 1.4;
+	color: $pill-soon-text;
+	background: $pill-soon-bg;
+	border: 1px solid $pill-soon-border;
+	border-radius: 4px;
+}
+
+// Full-width "Done" under the color picker: an obvious dismiss, since the picker commits live and
+// closing otherwise relies on click-away/Escape.
+.bw-ds-picker-done {
+	width: 100%;
+	justify-content: center;
+	margin-top: 8px;
+}
+
+.bw-ds-presets {
+	margin-top: 18px;
+}
+
+.bw-ds-preset-list {
+	// A FIXED 4-column grid so the 16 presets fall into even 4x4 rows (not a ragged auto-wrap).
+	// Each cell is a named preview tile - WordPress's own style-variation pattern (a small multi-
+	// color preview + a text label), since a scheme is several colors, not one.
+	display: grid;
+	grid-template-columns: repeat(4, 1fr);
+	gap: 8px;
+}
+
+// Each preset is a preview TILE: a strip of a few of the scheme's colors above its name. Column
+// layout, auto height. Selected/hover gets an accent ring + border. Scoped to .components-button to
+// override WP's default button padding/min-width/row layout.
+.bw-ds-preset.components-button {
+	display: flex;
+	flex-direction: column;
+	align-items: stretch;
+	gap: 5px;
+	width: 100%;
+	height: auto;
+	min-width: 0;
+	padding: 5px;
+	border: 1px solid $line-35;
+	border-radius: 8px;
+
+	&:hover:not(:disabled),
+	&.is-pressed {
+		border-color: var(--wp-admin-theme-color, #3858e9);
+		box-shadow: 0 0 0 1px var(--wp-admin-theme-color, #3858e9);
+	}
+}
+
+// The multi-color preview: equal segments of tint / brand / deep, so the tile shows the scheme's
+// range at a glance. light-dark(), so it follows the viewer's OS like the rest of the tool.
+.bw-ds-preset-preview {
+	display: flex;
+	width: 100%;
+	height: 30px;
+	border-radius: 5px;
+	overflow: hidden;
+	box-shadow: inset 0 0 0 1px $line-15;
+
+	span {
+		flex: 1;
+	}
+}
+
+.bw-ds-preset-name {
+	font-size: 11px;
+	line-height: 1.2;
+	text-align: center;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.bw-ds-apply-row {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	margin-top: 18px;
+}
+
+// Shown only when a scheme can't be gated to AA (unreachable with today's controls; a guard for
+// a future per-token-editing path) - explains why Apply is disabled instead of a silent disable.
+.bw-ds-apply-note {
+	font-size: 12px;
+	color: $err;
+}
+
+.bw-ds-msg {
+	font-size: 12px;
+	margin: 8px 0 0;
+	display: flex;
+	gap: 8px;
+	align-items: baseline;
+
+	&.is-ok {
+		color: $ok;
+	}
+
+	&.is-error {
+		color: $err;
+	}
+}
+
+.bw-ds-msg-text {
+	flex: 1 1 auto;
+}
+
+// "View your site" link on a successful Apply. Inherits the success green so the line reads
+// as one; nowrap + weight so it stays a single actionable target beside Dismiss.
+.bw-ds-msg-link {
+	flex: 0 0 auto;
+	color: inherit;
+	font-weight: 600;
+	white-space: nowrap;
+}
+
+// Divider block that holds the restore points in the rail.
+.bw-ds-rail-section {
+	margin-top: 22px;
+	padding-top: 14px;
+	border-top: 1px solid $line-20;
+}
+
+// --- Advanced panel (native WP Panel/PanelBody) ----------------------------
+//
+// Soften the default chrome so it reads as a quiet disclosure rather than a bright raised
+// card: trim the toggle's vertical padding and tint the white fill a hair toward the admin
+// page gray. Border and box stay (a prior attempt to strip them was worse).
+.bw-advanced {
+	// Breathing room from the Chroma control above (its RangeControl sets
+	// __nextHasNoMarginBottom, so without this the panel butts against the help text).
+	margin-top: 16px;
+
+	&,
+	.components-panel__body {
+		background: $advanced-fill;
+	}
+
+	.components-panel__body-toggle {
+		padding-top: 11px;
+		padding-bottom: 11px;
+	}
+}
+
+// --- Output: preview + token table -----------------------------------------
+
+.bw-ds-output {
+	flex: 999 1 460px;
+	min-width: 0;
+}
+
+.bw-ds-section-head {
+	display: flex;
+	align-items: baseline;
+	gap: 10px;
+	margin-bottom: 12px;
+	flex-wrap: wrap;
+}
+
+.bw-ds-samples {
+	display: flex;
+	gap: 14px;
+	flex-wrap: wrap;
+}
+
+.bw-ds-block-top {
+	margin-top: 24px;
+	padding-top: 18px;
+	border-top: 1px solid $line-25;
+}
+
+// The "independent colors" disclosure box.
+.bw-ds-indep {
+	margin-top: 24px;
+	padding: 10px 22px;
+	border: 1px dashed $line-50;
+	border-radius: 10px;
+	background: $panel-tint;
+}
+
+.bw-ds-indep-body {
+	margin-top: 12px;
+	padding-bottom: 8px;
+}
+
+// The disclosure toggle on the independent-colors box (plain, not underlined).
+.bw-ds-indep-toggle {
+	font-size: 13px;
+	font-weight: 600;
+	text-decoration: none;
+}
+
+.bw-ds-palette-title {
+	font-size: 15px;
+	margin: 0 0 2px;
+}
+
+.bw-ds-note {
+	font-size: 12px;
+	opacity: 0.6;
+	margin: 0 0 16px;
+}
+
+// Token inventory. Single column, so there are no ragged column gaps: ramps render as
+// horizontal strips and role tokens as adaptive split chips, both short. Per-token oklch values
+// are shown on hover; clicking a swatch/chip copies its token reference.
+.bw-ds-groups {
+	display: flex;
+	flex-direction: column;
+	gap: 22px;
+}
+
+// A focus ring for the bare-swatch buttons (uses the wp-admin accent, admin chrome not a theme
+// token - consistent with the rest of this screen).
+%bw-ds-focus {
+	&:focus-visible {
+		outline: 2px solid var(--wp-admin-theme-color, #2271b1);
+		outline-offset: 2px;
+	}
+}
+
+// --- Ramp strips (primitives) ---
+.bw-ds-strip2 {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.bw-ds-strip-row {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.bw-ds-strip-lab {
+	flex: 0 0 34px;
+	font-size: 9px;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+	opacity: 0.5;
+}
+
+.bw-ds-strip {
+	display: flex;
+	flex: 1 1 auto;
+	border-radius: 6px;
+	overflow: hidden;
+	box-shadow: inset 0 0 0 1px $line-15;
+}
+
+.bw-ds-sw {
+	flex: 1 1 0;
+	height: 26px;
+	border: 0;
+	padding: 0;
+	cursor: pointer;
+	@extend %bw-ds-focus;
+}
+
+.bw-ds-strip-ends {
+	display: flex;
+	justify-content: space-between;
+	margin: 3px 0 0 42px;
+	font-family: Menlo, Consolas, monospace;
+	font-size: 9px;
+	opacity: 0.5;
+}
+
+// --- Role chips (semantic, adaptive split swatch) ---
+// Indent to match the ramp bars above: the strips sit past a 34px Light/Dark label column + 8px
+// gap, so the chips carry the same 42px left offset (an empty spacer - the chips are self-
+// explanatory, no legend). No legend means each chip's own split carries the light/dark cue.
+.bw-ds-token-chips {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 12px;
+	margin-left: 42px;
+}
+
+.bw-ds-token-chip {
+	display: flex;
+	flex-direction: column;
+	// Left-aligned so the swatch's left edge lands on the ramp bars' left edge above.
+	align-items: flex-start;
+	gap: 5px;
+	width: 66px;
+	border: 0;
+	background: none;
+	padding: 0;
+	cursor: pointer;
+	@extend %bw-ds-focus;
+
+	&:hover .bw-ds-token-chip-swatch,
+	&:focus-visible .bw-ds-token-chip-swatch {
+		transform: scale(1.06);
+		box-shadow: $shadow-chip-hover;
+	}
+}
+
+.bw-ds-token-chip-swatch {
+	width: 48px;
+	height: 38px;
+	border-radius: 7px;
+	box-shadow: inset 0 0 0 1px $line-20;
+	transition:
+		transform 0.08s,
+		box-shadow 0.08s;
+}
+
+.bw-ds-token-chip-label {
+	font-size: 9.5px;
+	line-height: 1.15;
+	text-align: left;
+	opacity: 0.7;
+	word-break: break-word;
+}
+
+// Copy confirmation - a floating pill, only visible while a copy is fresh.
+.bw-ds-copy-toast {
+	position: fixed;
+	bottom: 24px;
+	left: 50%;
+	transform: translateX(-50%);
+	background: $toast-bg;
+	color: $toast-fg;
+	padding: 9px 16px;
+	border-radius: 8px;
+	font-family: Menlo, Consolas, monospace;
+	font-size: 12px;
+	opacity: 0;
+	pointer-events: none;
+	transition: opacity 0.15s;
+	z-index: 9;
+
+	&.is-on {
+		opacity: 1;
+	}
+}
+
+// --- Live preview card (SampleCard) ----------------------------------------
+//
+// Only the geometry is here; every color on this card is a generated palette value and stays
+// inline in the component.
+.bw-ds-preview {
+	padding: 18px;
+	border-radius: 10px;
+	border: 1px solid; // color set inline (dynamic)
+	flex: 1 1 0;
+	min-width: 0;
+}
+
+.bw-ds-preview-mode {
+	font-size: 11px;
+	opacity: 0.6;
+	margin-bottom: 12px;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+}
+
+.bw-ds-preview-h {
+	margin: 0 0 5px;
+	font-size: 17px;
+}
+
+.bw-ds-preview-body {
+	margin: 0 0 14px;
+	font-size: 14px;
+	line-height: 1.55;
+}
+
+.bw-ds-preview-divider {
+	height: 1px;
+	margin: 0 0 14px;
+}
+
+.bw-ds-caption {
+	font-size: 10px;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	opacity: 0.5;
+	// Section HEADER spacing: clear gap ABOVE to separate sections, tight below to sit on its
+	// content. (Section gaps live here, not as ad-hoc margins on each content block.)
+	margin: 16px 0 6px;
+}
+
+.bw-ds-preview-btns {
+	display: flex;
+	gap: 8px;
+	align-items: center;
+	flex-wrap: wrap;
+}
+
+// Preview button geometry (colors inline per style).
+.bw-ds-btn {
+	border-radius: 6px;
+	padding: 8px 14px;
+	font-size: 13px;
+	font-weight: 600;
+	cursor: pointer;
+	line-height: 1.2;
+	border: 1.5px solid transparent; // outline variant overrides border-color inline
+}
+
+.bw-ds-preview-forms {
+	display: flex;
+	gap: 16px;
+	align-items: center;
+	flex-wrap: wrap;
+}
+
+.bw-ds-control {
+	display: flex;
+	gap: 6px;
+	align-items: center;
+	font-size: 13px;
+}
+
+.bw-ds-checkbox {
+	width: 15px;
+	height: 15px;
+	border-radius: 4px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	flex: 0 0 auto;
+}
+
+.bw-ds-radio {
+	width: 15px;
+	height: 15px;
+	border-radius: 50%;
+	border: 1.5px solid; // color inline
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	flex: 0 0 auto;
+}
+
+.bw-ds-radio-dot {
+	width: 7px;
+	height: 7px;
+	border-radius: 50%;
+}
+
+.bw-ds-field-sample {
+	font-size: 12px;
+	padding: 5px 9px;
+	border-radius: 6px;
+	border: 1px solid; // color inline
+	display: inline-block;
+}
+
+// Editorial roles (site title / eyebrow / badge / callout). Geometry mirrors the theme's
+// _blocks.scss + theme-base.scss; every color is a generated palette value set inline.
+.bw-ds-preview-editorial {
+	/* section gap handled by .bw-ds-caption */
+}
+
+// Brand site title wordmark (is-style-brand) - the exact brand color as identity.
+.bw-ds-preview-brand {
+	font-size: 19px;
+	font-weight: 700;
+	line-height: 1.2;
+	margin-bottom: 14px;
+}
+
+// Eyebrow / kicker (is-style-eyebrow): mono, uppercase, tracked - custom.json eyebrow tokens.
+.bw-ds-preview-eyebrow {
+	margin: 0 0 4px;
+	font-family: ui-monospace, "SFMono-Regular", menlo, monospace;
+	font-size: 11px;
+	font-weight: 600; // --wp--custom--eyebrow--weight
+	letter-spacing: 0.08em; // --wp--custom--eyebrow--tracking
+	text-transform: uppercase;
+}
+
+.bw-ds-preview-eyebrow-h {
+	margin: 0 0 14px;
+	font-size: 15px;
+	font-weight: 600;
+	line-height: 1.25;
+}
+
+// Badge / pill (is-style-badge): fit-content pill, radius 9999px per custom.json badge tokens.
+.bw-ds-preview-badge {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: fit-content;
+	margin: 0 0 14px;
+	border-radius: 9999px;
+	padding: 0.3rem 10px;
+	font-size: 11px;
+	font-weight: 600;
+	line-height: 1;
+}
+
+// Callout band (is-style-callout): brand-tinted surface with a link left-bar.
+.bw-ds-preview-callout {
+	border-inline-start: 3px solid; // color inline
+	border-radius: 8px;
+	padding: 10px 14px;
+	font-size: 13px;
+	line-height: 1.5;
+}
+
+// --- Group heads (shared by ramp strips + role chips) ----------------------
+
+.bw-ds-group {
+	margin: 0;
+}
+
+.bw-ds-group-head {
+	display: flex;
+	align-items: baseline;
+	gap: 10px;
+	margin-bottom: 4px;
+}
+
+.bw-ds-group-title {
+	margin: 0;
+	font-size: 13px;
+}
+
+.bw-ds-group-desc {
+	font-size: 11px;
+	opacity: 0.55;
+}
+
+// --- Restore points --------------------------------------------------------
+
+.bw-ds-error {
+	font-size: 12px;
+	margin: 0 0 6px;
+	color: $err;
+}
+
+.bw-ds-empty {
+	font-size: 12px;
+	opacity: 0.55;
+	margin: 0;
+}
+
+.bw-ds-restore-list {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	font-size: 12px;
+}
+
+.bw-ds-restore-item {
+	padding: 5px 0;
+	border-bottom: 1px solid $line-15;
+}
+
+.bw-ds-restore-row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+}
+
+.bw-ds-restore-actions {
+	display: flex;
+	gap: 10px;
+	flex: 0 0 auto;
+	align-items: center;
+}
+
+.bw-ds-restore-time {
+	opacity: 0.5;
+	font-size: 11px;
+}
+
+// Confirm dialog (stable Modal). Message + right-aligned Cancel/action buttons, matching the WP
+// admin confirm layout. Modal handles the overlay, focus trap, and sizing.
+.bw-ds-confirm-modal-text {
+	margin: 0 0 1rem;
+}
+.bw-ds-confirm-modal-actions {
+	display: flex;
+	justify-content: flex-end;
+	gap: 8px;
+}
+
+.bw-ds-hint {
+	font-size: 11px;
+	opacity: 0.5;
+	margin: 6px 0 0;
+}
+
+// --- Overview swatch strip (color module's mini palette on the Overview card) ---
+
+.bw-ds-swatch-strip {
+	display: flex;
+	gap: 5px;
+	margin-bottom: 14px;
+}
+
+.bw-ds-mini-swatch {
+	width: 26px;
+	height: 26px;
+	border-radius: 5px;
+	border: 1px solid $line-30;
+}

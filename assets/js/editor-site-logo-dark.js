@@ -6,75 +6,75 @@
  * via a <picture> filter in inc/adaptive-logo.php. Plain wp.* globals, no JSX,
  * no build step - matching the theme's minimal asset pipeline.
  */
-( function ( wp ) {
-	if ( ! wp || ! wp.hooks || ! wp.element || ! wp.blockEditor ) {
+(function (wp) {
+	if (!wp || !wp.hooks || !wp.element || !wp.blockEditor) {
 		return;
 	}
 
-	var addFilter = wp.hooks.addFilter;
-	var el = wp.element.createElement;
-	var Fragment = wp.element.Fragment;
-	var __ = wp.i18n.__;
-	var InspectorControls = wp.blockEditor.InspectorControls;
-	var MediaUpload = wp.blockEditor.MediaUpload;
-	var MediaUploadCheck = wp.blockEditor.MediaUploadCheck;
-	var PanelBody = wp.components.PanelBody;
-	var Button = wp.components.Button;
-	var createHigherOrderComponent = wp.compose.createHigherOrderComponent;
+	const addFilter = wp.hooks.addFilter;
+	const el = wp.element.createElement;
+	const Fragment = wp.element.Fragment;
+	const __ = wp.i18n.__;
+	const InspectorControls = wp.blockEditor.InspectorControls;
+	const MediaUpload = wp.blockEditor.MediaUpload;
+	const MediaUploadCheck = wp.blockEditor.MediaUploadCheck;
+	const PanelBody = wp.components.PanelBody;
+	const Button = wp.components.Button;
+	const createHigherOrderComponent = wp.compose.createHigherOrderComponent;
 
-	var BLOCK = 'core/site-logo';
+	const BLOCK = 'core/site-logo';
 
 	// 1. Register the storage attributes on the Site Logo block.
 	addFilter(
 		'blocks.registerBlockType',
 		'blockwright/site-logo-dark-attributes',
-		function ( settings, name ) {
-			if ( BLOCK !== name ) {
+		function (settings, name) {
+			if (BLOCK !== name) {
 				return settings;
 			}
-			settings.attributes = Object.assign( {}, settings.attributes, {
+			settings.attributes = Object.assign({}, settings.attributes, {
 				darkLogoId: { type: 'number' },
 				darkLogoUrl: { type: 'string' },
-			} );
+			});
 			return settings;
 		}
 	);
 
 	// 2. Add the "Dark mode logo" media control to the block Inspector.
-	var withDarkLogo = createHigherOrderComponent( function ( BlockEdit ) {
-		return function ( props ) {
-			if ( BLOCK !== props.name ) {
-				return el( BlockEdit, props );
+	const withDarkLogo = createHigherOrderComponent(function (BlockEdit) {
+		return function (props) {
+			if (BLOCK !== props.name) {
+				return el(BlockEdit, props);
 			}
 
-			var attributes = props.attributes;
-			var setAttributes = props.setAttributes;
+			const attributes = props.attributes;
+			const setAttributes = props.setAttributes;
 
-			var onSelect = function ( media ) {
-				setAttributes( {
+			const onSelect = function (media) {
+				setAttributes({
 					darkLogoId: media.id,
 					darkLogoUrl: media.url,
-				} );
+				});
 			};
 
-			var onRemove = function () {
-				setAttributes( {
+			const onRemove = function () {
+				setAttributes({
 					darkLogoId: undefined,
 					darkLogoUrl: undefined,
-				} );
+				});
 			};
 
 			return el(
 				Fragment,
 				null,
-				el( BlockEdit, props ),
+				el(BlockEdit, props),
 				el(
 					InspectorControls,
 					null,
 					el(
 						PanelBody,
 						{
-							title: __( 'Dark mode logo', 'blockwright-blocks' ),
+							title: __('Dark mode logo', 'blockwright-blocks'),
 							initialOpen: false,
 						},
 						el(
@@ -88,11 +88,11 @@
 						el(
 							MediaUploadCheck,
 							null,
-							el( MediaUpload, {
-								onSelect: onSelect,
-								allowedTypes: [ 'image' ],
+							el(MediaUpload, {
+								onSelect,
+								allowedTypes: ['image'],
 								value: attributes.darkLogoId,
-								render: function ( o ) {
+								render(o) {
 									return el(
 										Fragment,
 										null,
@@ -106,14 +106,14 @@
 												? __(
 														'Replace dark logo',
 														'blockwright-blocks'
-												  )
+													)
 												: __(
 														'Select dark logo',
 														'blockwright-blocks'
-												  )
+													)
 										),
 										attributes.darkLogoUrl
-											? el( 'img', {
+											? el('img', {
 													src: attributes.darkLogoUrl,
 													alt: '',
 													style: {
@@ -122,7 +122,7 @@
 														maxWidth: '120px',
 														height: 'auto',
 													},
-											  } )
+												})
 											: null,
 										attributes.darkLogoUrl
 											? el(
@@ -132,18 +132,25 @@
 														isDestructive: true,
 														onClick: onRemove,
 													},
-													__( 'Remove', 'blockwright-blocks' )
-											  )
+													__(
+														'Remove',
+														'blockwright-blocks'
+													)
+												)
 											: null
 									);
 								},
-							} )
+							})
 						)
 					)
 				)
 			);
 		};
-	}, 'withDarkLogo' );
+	}, 'withDarkLogo');
 
-	addFilter( 'editor.BlockEdit', 'blockwright/site-logo-dark-control', withDarkLogo );
-} )( window.wp );
+	addFilter(
+		'editor.BlockEdit',
+		'blockwright/site-logo-dark-control',
+		withDarkLogo
+	);
+})(window.wp);

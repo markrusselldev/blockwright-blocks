@@ -1,0 +1,96 @@
+/**
+ * Shared design-system chrome: bits used across more than one module (typography helpers,
+ * status chips, the coming-soon module frame).
+ */
+
+@use "vars" as *;
+
+.bw-ds-h2 {
+	font-size: 15px;
+	margin: 0;
+}
+
+.bw-ds-muted {
+	font-size: 12px;
+	opacity: 0.55;
+}
+
+.bw-ds-sublabel {
+	font-size: 12px;
+	font-weight: 600;
+	opacity: 0.7;
+	margin-bottom: 6px;
+}
+
+.bw-ds-ellipsis {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+// WP's RangeControl number box left-aligns its value AND reserves Chrome's native number-spinner on
+// the right, so the digit reads off-center. Center it and drop the native spinner (the slider is the
+// primary control; typing still works) so the value sits truly centered. The box keeps its width so
+// decimals like "0.15" fit. Scoped to our app root so it never touches other admin range inputs.
+#bw-design-system-root .components-range-control__number {
+	input {
+		text-align: center;
+	}
+
+	input[type='number']::-webkit-outer-spin-button,
+	input[type='number']::-webkit-inner-spin-button {
+		-webkit-appearance: none;
+		appearance: none;
+		margin: 0;
+	}
+}
+
+// Compact core link-button (Restore / Delete / Dismiss / Show more).
+.bw-ds-linkbtn {
+	padding: 0;
+	height: auto;
+	font-size: 12px;
+}
+
+// Status chips (Ready / Coming soon).
+.bw-ds-chip {
+	font-size: 10px;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	border-radius: 10px;
+	padding: 1px 8px;
+	font-weight: 700;
+
+	&.is-ready {
+		background: $pill-ready-bg;
+		color: $ok;
+		border: 1px solid $pill-ready-border;
+	}
+
+	&.is-soon {
+		background: $pill-soon-bg;
+		color: $pill-soon-text;
+		border: 1px solid $pill-soon-border;
+	}
+}
+
+// Coming-soon module frame (Typography / Spacing / Autowright until they ship).
+.bw-ds-comingsoon {
+	border: 1px dashed $line-50;
+	border-radius: 10px;
+	padding: 48px;
+	text-align: center;
+	background: $panel-tint-soft;
+}
+
+.bw-ds-comingsoon-title {
+	font-size: 17px;
+	font-weight: 600;
+	margin: 0 0 6px;
+}
+
+.bw-ds-comingsoon-blurb {
+	color: $ink-muted;
+	margin: 0 auto;
+	max-width: 520px;
+}

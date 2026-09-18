@@ -13,7 +13,7 @@
 	<exclude-pattern>*/node_modules/*</exclude-pattern>
 	<exclude-pattern>*/scripts/*</exclude-pattern>
 
-	<!-- Default CLI behaviour. -->
+	<!-- Default CLI behavior. -->
 	<arg name="colors"/>
 	<arg name="report" value="full"/>
 	<arg name="report-width" value="120"/>

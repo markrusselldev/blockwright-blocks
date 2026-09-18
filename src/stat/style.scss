@@ -1,13 +1,12 @@
-
 // blockwright/stat - Stat Counter. Enqueued via the block's `style` handle (front end + editor
 // iframe). tabular-nums keeps the number a fixed width so the count-up does not jitter its
 // layout. Design values via token() (_tokens.scss).
-@use '../tokens' as *;
+@use "../tokens" as *;
 
 .bw-stat {
 	display: flex;
 	flex-direction: column;
-	gap: token('spacing--x-small');
+	gap: token("spacing--x-small");
 
 	&.is-align-center {
 		align-items: center;
@@ -23,15 +22,15 @@
 	// specificity and win. The .bw-stat compound raises us to (0,2,0) so the block owns its number.
 	& &__value {
 		margin: 0;
-		font-size: token('font-size--xxxl');
+		font-size: token("font-size--xxxl");
 		font-weight: 700;
 		line-height: 1.1;
-		color: token('color--link');
+		color: token("color--link");
 		font-variant-numeric: tabular-nums;
 	}
 
 	& &__label {
 		margin: 0;
-		color: token('color--text-2');
+		color: token("color--text-2");
 	}
 }

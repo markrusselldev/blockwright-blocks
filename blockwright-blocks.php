@@ -1,8 +1,8 @@
 <?php
 /**
  * Plugin Name:       Blockwright Blocks
- * Description:       Dynamic content bindings for any block, plus adaptive blocks that take on your theme's colours and light/dark: Icon Box, Icon List, Stat Counter, Timeline, a Light/Dark Toggle, a Stamp badge, and a curated icon collection. Degrades gracefully on any theme.
- * Version:           1.2.0
+ * Description:       Dynamic content bindings for any block, plus adaptive blocks that take on your theme's colors and light/dark: Icon Box, Icon List, Stat Counter, Timeline, a Light/Dark Toggle, a Stamp badge, and a curated icon collection. Degrades gracefully on any theme.
+ * Version:           1.3.0
  * Requires at least: 7.0
  * Requires PHP:      7.4
  * Author:            Mark Russell
@@ -19,7 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 if ( ! defined( 'BLOCKWRIGHT_BLOCKS_VERSION' ) ) {
-	define( 'BLOCKWRIGHT_BLOCKS_VERSION', '1.2.0' );
+	define( 'BLOCKWRIGHT_BLOCKS_VERSION', '1.3.0' );
 }
 if ( ! defined( 'BLOCKWRIGHT_BLOCKS_DIR' ) ) {
 	define( 'BLOCKWRIGHT_BLOCKS_DIR', plugin_dir_path( __FILE__ ) );
@@ -36,3 +36,9 @@ require_once BLOCKWRIGHT_BLOCKS_DIR . 'inc/adaptive-logo.php';
 require_once BLOCKWRIGHT_BLOCKS_DIR . 'inc/bindings.php';
 require_once BLOCKWRIGHT_BLOCKS_DIR . 'inc/icons.php';
 require_once BLOCKWRIGHT_BLOCKS_DIR . 'inc/color-scheme.php';
+require_once BLOCKWRIGHT_BLOCKS_DIR . 'inc/design-system.php';
+require_once BLOCKWRIGHT_BLOCKS_DIR . 'inc/class-write-engine.php';
+require_once BLOCKWRIGHT_BLOCKS_DIR . 'inc/rest-api.php';
+if ( is_admin() ) {
+	require_once BLOCKWRIGHT_BLOCKS_DIR . 'inc/admin-page.php';
+}

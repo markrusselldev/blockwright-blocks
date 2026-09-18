@@ -6,7 +6,7 @@
 	"title": "Stamp",
 	"category": "design",
 	"icon": "star-filled",
-	"description": "A rotated badge that sits over a container corner, like a rubber stamp. The colour follows the site colour scheme by default; set the corner, rotation, colour, and text.",
+	"description": "A rotated badge that sits over a container corner, like a rubber stamp. The color follows the site color scheme by default; set the corner, rotation, color, and text.",
 	"keywords": [ "badge", "ribbon", "tag", "label", "popular", "recommended" ],
 	"textdomain": "blockwright-blocks",
 	"attributes": {

@@ -13,7 +13,7 @@
  * WHY THIS LIVES IN THE PLUGIN, NOT THE THEME: a dark-logo swap is functionality
  * a user loses on theme switch, which WordPress classifies as plugin territory
  * (Theme Review enforces presentation-vs-functionality). Extending a core
- * block's Inspector is allowed anywhere, but the persisted behaviour is not
+ * block's Inspector is allowed anywhere, but the persisted behavior is not
  * theme-appropriate.
  *
  * @package Blockwright_Blocks

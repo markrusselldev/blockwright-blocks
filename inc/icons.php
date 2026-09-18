@@ -24,8 +24,8 @@
  * outline LOOK. `wp_register_icon()` sanitizes through a wp_kses allowlist that
  * permits no stroke attributes anywhere, so genuinely stroke-drawn sets (Tabler
  * outline, Feather, Lucide) arrive as filled blobs. Phosphor draws BOTH weights
- * as filled paths, so its outline weight passes untouched. Colour comes from the Icon
- * block's own CSS (fill: currentColor), so icons inherit theme token colours.
+ * as filled paths, so its outline weight passes untouched. Color comes from the Icon
+ * block's own CSS (fill: currentColor), so icons inherit theme token colors.
  *
  * Front-end cost is zero at any set size: the block stores only the icon NAME and
  * renders the SVG server-side, so a page's HTML inlines just the icons it uses (no
