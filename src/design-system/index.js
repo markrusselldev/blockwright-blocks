@@ -128,7 +128,13 @@ const sbPct = (L) =>
 // surface and its WCAG contrast ratio. >=4.5:1 = usable as body text (AA). The Aa sample carries the
 // pass/fail visually - a failing color's "Aa" is washed out - so the green/red on the ratio is only
 // reinforcement, never the sole cue (WCAG use-of-color). No badge letters (they collide with "Aa").
-function SafeZone({ colorHex, brandLight, brandDark }) {
+function SafeZone({
+	colorHex,
+	brandLight,
+	brandDark,
+	adjustedLight,
+	adjustedDark,
+}) {
 	const p = oklch(colorHex) || {};
 	const neutral = isNeutralSeed(colorHex);
 	const hue = typeof p.h === 'number' ? p.h : null;
@@ -155,18 +161,36 @@ function SafeZone({ colorHex, brandLight, brandDark }) {
 		light: brandLight || colorHex,
 		dark: brandDark || colorHex,
 	};
+	// State per mode: `adjusted` (brandFit had to move the entered color to stay legible on this
+	// surface) wins over pass/fail, because the shipped color it measures ALWAYS clears IDENTITY_MIN
+	// - so without this flag an out-of-range pick would read a false green pass. Grayscale never
+	// trips it: its identity is mirrored, not fitted, so adjusted is false and it stays a clean pass.
+	const modeState = (ratio, adjusted) => {
+		if (adjusted) {
+			return 'adjusted';
+		}
+		return ratio >= IDENTITY_MIN ? 'pass' : 'fail';
+	};
 	const modes = [
 		{
 			key: 'light',
 			bg: '#ffffff',
 			color: shipped.light,
 			ratio: wcagContrast(shipped.light, SB_SURF_L) || 0,
+			state: modeState(
+				wcagContrast(shipped.light, SB_SURF_L) || 0,
+				!!adjustedLight
+			),
 		},
 		{
 			key: 'dark',
 			bg: '#1c1c1e',
 			color: shipped.dark,
 			ratio: wcagContrast(shipped.dark, SB_SURF_D) || 0,
+			state: modeState(
+				wcagContrast(shipped.dark, SB_SURF_D) || 0,
+				!!adjustedDark
+			),
 		},
 	];
 	return (
@@ -206,10 +230,13 @@ function SafeZone({ colorHex, brandLight, brandDark }) {
 							>
 								Aa
 							</span>
-							<span
-								className={`bw-ds-mode-ratio ${m.ratio >= IDENTITY_MIN ? 'is-pass' : 'is-fail'}`}
-							>
+							<span className={`bw-ds-mode-ratio is-${m.state}`}>
 								{m.ratio.toFixed(1)}:1
+								{m.state === 'adjusted' && (
+									<span className="bw-ds-mode-tag">
+										{__('adjusted', 'blockwright-blocks')}
+									</span>
+								)}
 							</span>
 						</div>
 					))}
@@ -1349,6 +1376,10 @@ function ColorModule({ onApplied }) {
 							colorHex={swatchValue}
 							brandLight={result?.report?.brand?.light?.hex}
 							brandDark={result?.report?.brand?.dark?.hex}
+							adjustedLight={
+								result?.report?.brand?.light?.adjusted
+							}
+							adjustedDark={result?.report?.brand?.dark?.adjusted}
 						/>
 					</div>
 					{!preset && (

@@ -4,7 +4,7 @@ Tags: dynamic-content, block-bindings, icons, blocks, dark-mode
 Requires at least: 7.0
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.3.0
+Stable tag: 1.3.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -92,6 +92,10 @@ Blockwright Blocks is actively developed. The visual color designer landed in 1.
 Priorities may shift based on user feedback.
 
 == Changelog ==
+
+= 1.3.1 =
+Clearer contrast feedback in the color designer.
+* The brand-color contrast indicator now tells you when a color you picked had to be nudged to stay readable, instead of always showing a plain pass. If your color is too light or too dark for a background, that mode is marked "adjusted" so you know it was fitted, not used exactly as entered.
 
 = 1.3.0 =
 New: a visual color designer in your dashboard.
