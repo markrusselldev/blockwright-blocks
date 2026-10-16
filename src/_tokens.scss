@@ -3,7 +3,7 @@
 // The plugin ships to ANY theme, so every theme.json token a block consumes must carry a
 // literal Blockwright fallback (the value under our own theme). Hand-writing
 // `var(--wp--preset--x, <fallback>)` per file is where drift creeps in (e.g. text-2 was
-// falling back to both `currentColor` and `inherit`). token() centralises each fallback to
+// falling back to both `currentColor` and `inherit`). token() centralizes each fallback to
 // ONE place and ERRORS at build time on an unmapped token - a stronger guarantee than the
 // CSS linter, which only sees literals after the fact.
 //

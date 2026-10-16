@@ -2,7 +2,7 @@
 /**
  * No-flash color-scheme preference.
  *
- * The Light / Dark Toggle block (blocks/theme-toggle/) stores a visitor's session choice in
+ * The Light / Dark Toggle block stores a visitor's session choice in
  * sessionStorage and overrides `color-scheme` (plus `data-bw-scheme`) on <html>, which the
  * theme's light-dark() tokens and the button's action icon follow. That runs in a footer
  * viewScript - too late to avoid a flash of the OS scheme on load. This prints a tiny inline

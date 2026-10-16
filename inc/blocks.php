@@ -22,7 +22,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 add_action(
 	'init',
 	function () {
-		// One slug per shipped block. Scaffold new blocks with scripts/new-block.mjs.
+		// One slug per shipped block.
 		$blocks = array(
 			'icon-list',
 			'icon-list-item',
@@ -37,7 +37,7 @@ add_action(
 		foreach ( $blocks as $slug ) {
 			$dir = BLOCKWRIGHT_BLOCKS_DIR . 'build/' . $slug;
 			if ( ! file_exists( $dir . '/block.json' ) ) {
-				continue; // Not built yet - run `npm run build`.
+				continue; // No compiled block (a source checkout that has not been built).
 			}
 			register_block_type( $dir );
 

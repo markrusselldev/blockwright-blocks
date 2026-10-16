@@ -1,22 +1,24 @@
 <?php
 /**
  * Design-system control plane: the write engine - the one and only door that changes
- * the design source of truth.
+ * the applied design.
  *
- * There is no core function that writes theme.json to disk (the resolver is read-only),
- * so we follow the approach the first-party Create Block Theme plugin uses: write the
- * changed slice into the active theme's theme.json file, then surgically clear just the
- * keys we wrote from the user Global Styles record so the file value is what renders.
- * Every write snapshots first, so any change is reversible.
+ * The applied look lives in ONE option, keyed by theme and module, and is
+ * handed to WordPress on every request by the supplier (design-supply.php) through core's
+ * wp_theme_json_data_theme filter. Nothing here writes the theme's files: a theme update
+ * deletes and replaces the theme directory, so anything stored there is lost. An Apply does
+ * not write values into the user's Global Styles record either; that layer is the site
+ * owner's, and values copied into it never receive later theme updates. The one exception
+ * is "Copy to site styles", which the owner chooses explicitly (keep_in_site_styles()).
  *
- * Order of the layers WordPress merges design data: core < theme.json file < the user's
- * Site-Editor record (a wp_global_styles post). The user record wins, so after writing
- * the file we clear ONLY the keys we changed from that record - surgically, leaving the
- * user's unrelated Site-Editor work intact.
+ * Order of the layers WordPress merges design data: core < blocks < theme < the user's
+ * Site-Editor record (a wp_global_styles post). The supplier puts our values into the theme
+ * layer; an Apply then clears the same key from the user record, so a Site-Editor override
+ * of that slice does not hide the scheme just applied. Every write snapshots, so any change
+ * is reversible.
  *
- * The category being written (which path in theme.json it owns, replace vs merge) comes
- * from the registry, so this engine is not color-specific: every ability writes through
- * it.
+ * The category being written (which path in theme.json it owns) comes from the registry, so
+ * this engine is not color-specific: every ability writes through it.
  *
  * @package Blockwright_Blocks
  */
@@ -28,8 +30,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * The write engine. Static methods; there is no state to hold between calls beyond the
- * files it reads and writes.
+ * The write engine. Static methods; the state it manages is the applied-design option and
+ * the restore-point files.
  */
 class Write_Engine {
 
@@ -37,67 +39,67 @@ class Write_Engine {
 	 * Newest auto restore points to keep on disk PER MODULE (color, typography, ...); older
 	 * ones of the SAME module are pruned after each new snapshot, so one module's churn never
 	 * evicts another's restore points. The pristine "original" baseline is never counted or
-	 * pruned. 50 is generous on purpose - a snapshot is ~48 KB, so 50/module is a few MB, and
-	 * pruning is permanent (no recycle bin), so the cap exists to bound growth, not to save space.
+	 * pruned. 50 is generous on purpose - a snapshot is a few KB, and pruning is permanent
+	 * (no recycle bin), so the cap exists to bound growth, not to save space.
 	 */
 	const MAX_AUTO_SNAPSHOTS_PER_MODULE = 50;
 
 	/**
-	 * Write a category's value into the active theme's theme.json, then clear the
-	 * matching keys from the user Global Styles record so the file value renders.
-	 * Snapshots the current state first.
+	 * The option holding the applied design: { stylesheet: { category: entry } }, where an
+	 * entry is { values, inputs, label, time }. Autoloaded, because the supplier reads it on
+	 * every request that resolves theme data.
+	 */
+	const OPTION = 'blockwright_blocks_design';
+
+	/**
+	 * Apply a category's values: store them in the option for the active theme, clear the
+	 * matching key from the user Global Styles record, and save a restore point.
 	 *
-	 * @param string $category Registry category key, e.g. 'color'.
-	 * @param mixed  $value    The value to write at the category's theme.json path.
-	 * @param string $label    Optional human label for the automatic snapshot.
+	 * @param string     $category Registry category key, e.g. 'color'.
+	 * @param array      $values   The values to apply (for color: palette entries).
+	 * @param string     $label    Optional human label for the restore point.
+	 * @param array|null $inputs   The inputs that produced the values (preset, seed, ...), kept so
+	 *                             a later engine can regenerate them; null when unknown.
+	 * @param array      $opts     { driven: string[] the slugs the scheme sets - only those are
+	 *                             stored, so every other token keeps following the theme;
+	 *                             clear_user: bool, default true - false for an automatic refresh,
+	 *                             which must not undo a look the owner copied into site styles }.
 	 * @return array|\WP_Error { snapshot: string } on success, WP_Error on failure.
 	 */
-	public static function write( $category, $value, $label = '' ) {
+	public static function write( $category, $values, $label = '', $inputs = null, $opts = array() ) {
 		$entry = get_category( $category );
 		if ( null === $entry || empty( $entry['path'] ) ) {
 			return new \WP_Error( 'bw_unknown_category', "Unknown design-system category: $category", array( 'status' => 400 ) );
-		}
-		$path  = $entry['path'];
-		$file  = self::theme_json_path();
-		$check = self::read_theme_json();
-		if ( is_wp_error( $check ) ) {
-			return $check;
-		}
-		if ( ! self::is_writable() ) {
-			return new \WP_Error( 'bw_theme_not_writable', "The active theme's theme.json is not writable by WordPress on this host.", array( 'status' => 409 ) );
 		}
 
 		// Keep a pristine "original" restore point, once, before the first change ever.
 		self::capture_original();
 
-		// Decode as OBJECTS so empty objects ({}) elsewhere in the file are preserved (a
-		// full associative decode rewrites every {} as []); set only this category's path,
-		// so the write changes that slice and leaves the rest of the file untouched.
-		$tree = wp_json_file_decode( $file );
-		if ( ! is_object( $tree ) ) {
-			return new \WP_Error( 'bw_bad_theme_json', 'theme.json could not be parsed.', array( 'status' => 500 ) );
-		}
-		self::set_by_path_obj( $tree, $path, $value );
-		$written = self::write_theme_json_locked( $tree );
-		if ( is_wp_error( $written ) ) {
-			return $written;
+		$values = self::only_slugs( (array) $values, isset( $opts['driven'] ) ? (array) $opts['driven'] : array() );
+		if ( empty( $values ) ) {
+			return new \WP_Error( 'bw_empty_palette', 'No values to apply.', array( 'status' => 400 ) );
 		}
 
-		// Surgically clear the same keys from the user Global Styles record.
-		self::clear_user_override( $path );
+		$applied              = self::applied();
+		$applied[ $category ] = array(
+			'values' => $values,
+			'inputs' => is_array( $inputs ) ? $inputs : null,
+			'label'  => (string) $label,
+			'time'   => microtime( true ),
+		);
+		self::save_applied( $applied );
 
-		// Recompute merged data. Note: the file itself is re-read on the NEXT request
-		// (core memoizes theme.json by path for the life of a request with no reset
-		// hook), so callers should refetch rather than read merged data back here.
-		if ( function_exists( 'wp_clean_theme_json_cache' ) ) {
-			wp_clean_theme_json_cache();
+		// A Site-Editor override of this slice would hide what was just applied. An automatic
+		// refresh leaves it: the owner may have copied the look into site styles on purpose.
+		if ( ! isset( $opts['clear_user'] ) || $opts['clear_user'] ) {
+			self::clear_user_override( $entry['path'] );
 		}
-		self::purge_caches();
+		self::after_change();
 
 		// Snapshot the APPLIED state, labeled "<Module>: <what changed>" so a restore point reads
-		// as a full checkpoint of the whole theme.json taken when that module changed - the module
-		// prefix is added here so every ability gets it for free. Restoring this point returns to
-		// THIS look, not the state before it (the pristine baseline is original.json).
+		// as a full checkpoint of the whole applied design taken when that module changed - the
+		// module prefix is added here so every ability gets it for free. Restoring this point
+		// returns to THIS look, not the state before it (the pristine baseline is the theme's original).
 		$change   = '' !== (string) $label ? $label : __( 'applied', 'blockwright-blocks' );
 		$display  = self::category_label( $category ) . ': ' . $change;
 		$snapshot = self::snapshot( $display, $category );
@@ -109,10 +111,72 @@ class Write_Engine {
 	}
 
 	/**
-	 * Restore a snapshot: rewrite theme.json and the user Global Styles record to the
-	 * captured state.
+	 * The applied design for the active theme: { category: entry }.
 	 *
-	 * @param string $id Snapshot file name (e.g. 'original.json' or an auto snapshot).
+	 * @return array
+	 */
+	public static function applied() {
+		$all = get_option( self::OPTION, array() );
+		$key = get_stylesheet();
+		return ( is_array( $all ) && isset( $all[ $key ] ) && is_array( $all[ $key ] ) ) ? $all[ $key ] : array();
+	}
+
+	/**
+	 * Keep only the entries whose slug is in $slugs (all of them when $slugs is empty).
+	 *
+	 * @param array    $values Entries with a slug.
+	 * @param string[] $slugs  Slugs to keep.
+	 * @return array
+	 */
+	public static function only_slugs( $values, $slugs ) {
+		$values = array_values(
+			array_filter(
+				$values,
+				static function ( $e ) {
+					return is_array( $e ) && isset( $e['slug'] );
+				}
+			)
+		);
+		if ( empty( $slugs ) ) {
+			return $values;
+		}
+		$keep = array_flip( array_map( 'strval', $slugs ) );
+		return array_values(
+			array_filter(
+				$values,
+				static function ( $e ) use ( $keep ) {
+					return isset( $keep[ $e['slug'] ] );
+				}
+			)
+		);
+	}
+
+	/**
+	 * Store the applied design for a theme (the active one by default), leaving other themes'
+	 * entries intact (so switching back to a theme brings its look back).
+	 *
+	 * @param array       $applied    { category: entry }; empty removes this theme's entry.
+	 * @param string|null $stylesheet Theme to store it for; null = the active theme.
+	 */
+	private static function save_applied( $applied, $stylesheet = null ) {
+		$all = get_option( self::OPTION, array() );
+		$all = is_array( $all ) ? $all : array();
+		$key = null === $stylesheet ? get_stylesheet() : (string) $stylesheet;
+		if ( empty( $applied ) ) {
+			unset( $all[ $key ] );
+		} else {
+			$all[ $key ] = $applied;
+		}
+		update_option( self::OPTION, $all, true );
+	}
+
+	/**
+	 * Restore a snapshot: put back the applied design and the user Global Styles record it
+	 * captured. A restore point saved by plugin 1.3.x stored the whole theme.json instead; for
+	 * those, the palette inside it becomes the applied color (the pre-change "original" means
+	 * nothing applied), and the theme's own file is never written.
+	 *
+	 * @param string $id Snapshot file name (an original baseline or an auto snapshot).
 	 * @return true|\WP_Error
 	 */
 	public static function restore( $id ) {
@@ -122,25 +186,187 @@ class Write_Engine {
 			return new \WP_Error( 'bw_snapshot_missing', "Snapshot not found: $id", array( 'status' => 404 ) );
 		}
 		$snap = wp_json_file_decode( $file, array( 'associative' => true ) );
-		if ( ! is_array( $snap ) || ( ! isset( $snap['theme_json_raw'] ) && ! isset( $snap['theme_json'] ) ) ) {
+		if ( ! is_array( $snap ) ) {
 			return new \WP_Error( 'bw_snapshot_invalid', "Snapshot is unreadable: $id", array( 'status' => 422 ) );
 		}
-		if ( ! self::is_writable() ) {
-			return new \WP_Error( 'bw_theme_not_writable', 'theme.json is not writable on this host.', array( 'status' => 409 ) );
+		if ( isset( $snap['theme'] ) && get_stylesheet() !== $snap['theme'] ) {
+			return new \WP_Error( 'bw_snapshot_other_theme', 'This restore point belongs to a different theme.', array( 'status' => 409 ) );
 		}
-		// Prefer the raw bytes (byte-perfect restore); older snapshots stored a decoded copy.
-		$written = isset( $snap['theme_json_raw'] )
-			? self::write_theme_json_raw( (string) $snap['theme_json_raw'] )
-			: self::write_theme_json_locked( $snap['theme_json'] );
-		if ( is_wp_error( $written ) ) {
-			return $written;
+		$applied = self::applied_from_snapshot( $snap, $id );
+		if ( is_wp_error( $applied ) ) {
+			return $applied;
 		}
+		// A legacy point carries the whole palette. Trim it to the slugs a scheme sets, as known
+		// from what is applied now, so the other tokens keep following the theme.
+		$current = self::applied();
+		foreach ( $applied as $category => $entry ) {
+			if ( null === ( $entry['inputs'] ?? null ) && ! empty( $current[ $category ]['values'] ) ) {
+				$applied[ $category ]['values'] = self::only_slugs( (array) $entry['values'], wp_list_pluck( $current[ $category ]['values'], 'slug' ) );
+			}
+		}
+		self::save_applied( $applied );
 		self::restore_user_override( $snap['user_global_styles'] ?? null );
+		self::after_change();
+		return true;
+	}
+
+	/**
+	 * The applied design a snapshot stands for.
+	 *
+	 * @param array  $snap Decoded snapshot.
+	 * @param string $id   Snapshot file name.
+	 * @return array|\WP_Error
+	 */
+	private static function applied_from_snapshot( $snap, $id ) {
+		if ( array_key_exists( 'applied', $snap ) ) {
+			return is_array( $snap['applied'] ) ? $snap['applied'] : array();
+		}
+		// Legacy (plugin 1.3.x) snapshot: a copy of the whole theme.json.
+		if ( self::is_original( $id ) ) {
+			return array();
+		}
+		$palette = self::legacy_palette( $snap );
+		if ( null === $palette ) {
+			return new \WP_Error( 'bw_snapshot_invalid', "Snapshot is unreadable: $id", array( 'status' => 422 ) );
+		}
+		return array(
+			'color' => array(
+				'values' => $palette,
+				'inputs' => null,
+				'label'  => self::label_change( isset( $snap['label'] ) ? (string) $snap['label'] : '' ),
+				'time'   => isset( $snap['time'] ) ? (float) $snap['time'] : 0,
+			),
+		);
+	}
+
+	/**
+	 * The palette inside a legacy snapshot's stored theme.json, or null.
+	 *
+	 * @param array $snap Decoded snapshot.
+	 * @return array|null
+	 */
+	private static function legacy_palette( $snap ) {
+		$raw = isset( $snap['theme_json_raw'] ) ? json_decode( (string) $snap['theme_json_raw'], true ) : ( $snap['theme_json'] ?? null );
+		$pal = is_array( $raw ) ? ( $raw['settings']['color']['palette'] ?? null ) : null;
+		if ( ! is_array( $pal ) || empty( $pal ) ) {
+			return null;
+		}
+		$out = array();
+		foreach ( $pal as $e ) {
+			if ( is_array( $e ) && isset( $e['slug'], $e['color'] ) ) {
+				$out[] = array(
+					'slug'  => (string) $e['slug'],
+					'name'  => isset( $e['name'] ) ? (string) $e['name'] : (string) $e['slug'],
+					'color' => (string) $e['color'],
+				);
+			}
+		}
+		return $out ? $out : null;
+	}
+
+	/**
+	 * The "what changed" half of a "<Module>: <what changed>" restore-point label.
+	 *
+	 * @param string $label Full label.
+	 * @return string
+	 */
+	private static function label_change( $label ) {
+		$pos = strpos( $label, ': ' );
+		return false === $pos ? $label : substr( $label, $pos + 2 );
+	}
+
+	/**
+	 * One-time move of a site that applied a scheme with plugin 1.3.x (the scheme then lived in
+	 * the theme's theme.json): for EVERY theme with such a restore point, the newest one becomes
+	 * that theme's applied color, so the next theme update cannot wipe it, including a theme
+	 * that is not active right now. Runs once; marks itself done by creating the option. Inputs
+	 * are unknown (restore points never stored them), so the Design screen re-derives them from
+	 * the label and trims the values to the tokens a scheme sets.
+	 */
+	public static function migrate_legacy() {
+		if ( false !== get_option( self::OPTION, false ) ) {
+			return;
+		}
+		// Create the option first, so a failure below can never make this run every request.
+		add_option( self::OPTION, array(), '', true );
+		$dir = self::snapshots_dir();
+		if ( ! is_dir( $dir ) ) {
+			return;
+		}
+		$newest = array();
+		foreach ( (array) glob( trailingslashit( $dir ) . 'auto-*.json' ) as $file ) {
+			$snap  = wp_json_file_decode( $file, array( 'associative' => true ) );
+			$theme = is_array( $snap ) ? (string) ( $snap['theme'] ?? '' ) : '';
+			if ( '' === $theme || array_key_exists( 'applied', $snap ) || 'color' !== self::snapshot_category( $file ) ) {
+				continue;
+			}
+			if ( ! isset( $newest[ $theme ] ) || (float) ( $snap['time'] ?? 0 ) > (float) ( $newest[ $theme ]['time'] ?? 0 ) ) {
+				$newest[ $theme ] = $snap;
+			}
+		}
+		foreach ( $newest as $theme => $snap ) {
+			$applied = self::applied_from_snapshot( $snap, 'auto' );
+			if ( ! is_wp_error( $applied ) ) {
+				self::save_applied( $applied, $theme );
+			}
+		}
+	}
+
+	/**
+	 * Recompute merged design data and purge page caches after the applied design changed.
+	 */
+	private static function after_change() {
 		if ( function_exists( 'wp_clean_theme_json_cache' ) ) {
 			wp_clean_theme_json_cache();
 		}
 		self::purge_caches();
-		return true;
+	}
+
+	/**
+	 * Copy the applied design into the user's Global Styles record, so the look survives this
+	 * plugin being deactivated. It is the site owner's explicit choice, with a cost: values in
+	 * that record override the theme wholesale, so later theme updates no longer reach them.
+	 * The applied design stays stored, and a restore point is saved.
+	 *
+	 * @return array|\WP_Error { snapshot: string } on success, WP_Error on failure.
+	 */
+	public static function keep_in_site_styles() {
+		$applied = self::applied();
+		$post_id = self::user_global_styles_post_id();
+		if ( empty( $applied ) ) {
+			return new \WP_Error( 'bw_nothing_applied', 'Nothing has been applied yet.', array( 'status' => 409 ) );
+		}
+		if ( ! $post_id ) {
+			return new \WP_Error( 'bw_no_user_styles', 'The site styles record could not be found.', array( 'status' => 500 ) );
+		}
+		self::capture_original();
+
+		\WP_Theme_JSON_Resolver::clean_cached_data();
+		// Raw data keeps presets keyed by origin (palette.theme); get_data() would flatten them.
+		$theme = \WP_Theme_JSON_Resolver::get_theme_data()->get_raw_data();
+		$data  = json_decode( (string) get_post( $post_id )->post_content, true );
+		$data  = is_array( $data ) ? $data : array();
+		foreach ( array_keys( $applied ) as $category ) {
+			$reg  = get_category( $category );
+			$path = ( null !== $reg && ! empty( $reg['path'] ) ) ? array_merge( $reg['path'], array( 'theme' ) ) : null;
+			$node = $path ? self::get_in( $theme, $path ) : null;
+			if ( is_array( $node ) && ! empty( $node ) ) {
+				$data = self::set_in( $data, $path, $node );
+			}
+		}
+		$data['version']                     = \WP_Theme_JSON::LATEST_SCHEMA;
+		$data['isGlobalStylesUserThemeJSON'] = true;
+		// wp_update_post expects slashed content; the JSON's escapes are stripped otherwise.
+		wp_update_post(
+			array(
+				'ID'           => $post_id,
+				'post_content' => wp_slash( wp_json_encode( $data ) ),
+			)
+		);
+		self::after_change();
+
+		$snapshot = self::snapshot( self::category_label( 'color' ) . ': ' . __( 'copied to site styles', 'blockwright-blocks' ), 'color' );
+		return is_wp_error( $snapshot ) ? $snapshot : array( 'snapshot' => basename( $snapshot ) );
 	}
 
 	/**
@@ -177,11 +403,16 @@ class Write_Engine {
 		}
 		$out = array();
 		foreach ( (array) glob( trailingslashit( $dir ) . '*.json' ) as $file ) {
-			$snap  = wp_json_file_decode( $file, array( 'associative' => true ) );
+			$snap = wp_json_file_decode( $file, array( 'associative' => true ) );
+			// Restore points belong to the theme they were taken on; restore() refuses others.
+			if ( is_array( $snap ) && isset( $snap['theme'] ) && get_stylesheet() !== $snap['theme'] ) {
+				continue;
+			}
 			$out[] = array(
 				'id'       => basename( $file ),
 				'label'    => is_array( $snap ) && isset( $snap['label'] ) ? $snap['label'] : '',
 				'category' => is_array( $snap ) && isset( $snap['category'] ) ? (string) $snap['category'] : '',
+				'original' => self::is_original( basename( $file ) ),
 				'time'     => is_array( $snap ) && isset( $snap['time'] ) ? (float) $snap['time'] : 0,
 			);
 		}
@@ -204,7 +435,7 @@ class Write_Engine {
 	 */
 	public static function delete_snapshot( $id ) {
 		$id = basename( (string) $id );
-		if ( 'original.json' === $id ) {
+		if ( self::is_original( $id ) ) {
 			return new \WP_Error( 'bw_protect_original', 'The original baseline cannot be deleted.', array( 'status' => 400 ) );
 		}
 		$file = trailingslashit( self::snapshots_dir() ) . $id;
@@ -222,123 +453,6 @@ class Write_Engine {
 	}
 
 	// Internals.
-
-	/**
-	 * Absolute path to the active theme's theme.json.
-	 *
-	 * @return string
-	 */
-	private static function theme_json_path() {
-		return trailingslashit( get_stylesheet_directory() ) . 'theme.json';
-	}
-
-	/**
-	 * Read and decode the active theme's theme.json.
-	 *
-	 * @return array|\WP_Error
-	 */
-	private static function read_theme_json() {
-		$file = self::theme_json_path();
-		if ( ! is_readable( $file ) ) {
-			return new \WP_Error( 'bw_no_theme_json', 'The active theme has no readable theme.json.', array( 'status' => 409 ) );
-		}
-		$data = wp_json_file_decode( $file, array( 'associative' => true ) );
-		if ( ! is_array( $data ) ) {
-			return new \WP_Error( 'bw_bad_theme_json', 'theme.json could not be parsed.', array( 'status' => 500 ) );
-		}
-		return $data;
-	}
-
-	/**
-	 * Whether theme.json can be written on this host.
-	 *
-	 * @return bool
-	 */
-	private static function is_writable() {
-		$file = self::theme_json_path();
-		return file_exists( $file ) ? wp_is_writable( $file ) : wp_is_writable( dirname( $file ) );
-	}
-
-	/**
-	 * Write theme.json using WP_Filesystem, guarded by a sibling .lock so two writes
-	 * cannot interleave.
-	 *
-	 * The lock is a deliberate BEST-EFFORT advisory guard, not a true mutex: WP_Filesystem
-	 * exposes no atomic exclusive-create, so the exists-check/write is not race-free. That is
-	 * sufficient here - the write path is admin-only (`edit_theme_options`) and single-operator,
-	 * so concurrent writes are a near-impossibility rather than a threat; the stale-lock timeout
-	 * below keeps a crashed write from wedging the tool. It is intentionally not hardened further.
-	 *
-	 * @param array $data Full theme.json data to encode and write.
-	 * @return true|\WP_Error
-	 */
-	private static function write_theme_json_locked( $data ) {
-		$fs = self::filesystem();
-		if ( is_wp_error( $fs ) ) {
-			return $fs;
-		}
-		$file = self::theme_json_path();
-		$lock = $file . '.lock';
-		// A stale lock older than 30s is ignored (a crashed write should not wedge us).
-		if ( $fs->exists( $lock ) ) {
-			$age = time() - (int) $fs->mtime( $lock );
-			if ( $age >= 0 && $age < 30 ) {
-				return new \WP_Error( 'bw_write_locked', 'Another design write is in progress; try again.', array( 'status' => 409 ) );
-			}
-		}
-		$fs->put_contents( $lock, (string) time(), FS_CHMOD_FILE );
-		// Re-encode matching the file's own indentation, so a write changes only the
-		// values it touches and leaves the rest of the file byte-identical (a minimal diff
-		// on git-tracked themes, ours included), rather than reformatting every line.
-		$existing = $fs->exists( $file ) ? (string) $fs->get_contents( $file ) : '';
-		$json     = wp_json_encode( $data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
-		$json     = self::reindent( $json, self::detect_indent( $existing ) );
-		// Match the file's existing trailing-newline (ours has none) so the diff is only
-		// the changed values, not an added blank line.
-		$eol = ( '' !== $existing && "\n" === substr( $existing, -1 ) ) ? "\n" : '';
-		$ok  = $fs->put_contents( $file, $json . $eol, FS_CHMOD_FILE );
-		$fs->delete( $lock );
-		if ( ! $ok ) {
-			return new \WP_Error( 'bw_write_failed', 'Writing theme.json failed.', array( 'status' => 500 ) );
-		}
-		return true;
-	}
-
-	/**
-	 * Detect the one-level indentation unit of an existing JSON file (tab, or N spaces),
-	 * so a rewrite matches it. Falls back to two spaces.
-	 *
-	 * @param string $text File contents.
-	 * @return string One indentation unit.
-	 */
-	private static function detect_indent( $text ) {
-		if ( preg_match( '/\n(\t+| +)\S/', (string) $text, $m ) ) {
-			return "\t" === $m[1][0] ? "\t" : $m[1];
-		}
-		return '  ';
-	}
-
-	/**
-	 * Re-indent wp_json_encode PRETTY_PRINT output (4 spaces per level) to use $unit per
-	 * level instead. Only leading structural spaces are touched; JSON strings never begin
-	 * a line, so values are left alone.
-	 *
-	 * @param string $json JSON with 4-space indentation.
-	 * @param string $unit Indentation unit to use per level.
-	 * @return string
-	 */
-	private static function reindent( $json, $unit ) {
-		if ( '    ' === $unit ) {
-			return $json;
-		}
-		return preg_replace_callback(
-			'/^( +)/m',
-			static function ( $m ) use ( $unit ) {
-				return str_repeat( $unit, intdiv( strlen( $m[1] ), 4 ) );
-			},
-			$json
-		);
-	}
 
 	/**
 	 * Clear one key path from the user Global Styles record, pruning now-empty parents.
@@ -411,9 +525,10 @@ class Write_Engine {
 	}
 
 	/**
-	 * Take a snapshot of the current theme.json + user Global Styles record.
+	 * Take a snapshot of the applied design + user Global Styles record.
 	 *
-	 * @param string $label Human label.
+	 * @param string $label    Human label.
+	 * @param string $category The module that changed (e.g. 'color'), for per-module pruning.
 	 * @return string|\WP_Error Absolute snapshot file path, or error.
 	 */
 	private static function snapshot( $label, $category = '' ) {
@@ -482,7 +597,7 @@ class Write_Engine {
 			return (string) $snap['category'];
 		}
 		// Legacy fallback: map the label prefix ("Color: ...") back to a category key.
-		$label = isset( $snap['label'] ) ? (string) $snap['label'] : '';
+		$label  = isset( $snap['label'] ) ? (string) $snap['label'] : '';
 		$prefix = trim( (string) strstr( $label, ':', true ) );
 		if ( '' === $prefix ) {
 			return '';
@@ -516,23 +631,53 @@ class Write_Engine {
 	}
 
 	/**
-	 * Capture the pristine original once (before our first edit ever). Idempotent.
+	 * Capture the active theme's pristine original once (before our first edit on it ever).
+	 * Each theme gets its own, so "revert to original" means that theme's baseline. Plugin 1.3.x
+	 * kept a single original.json; it still counts as the original of the theme it records.
 	 */
 	private static function capture_original() {
-		$file = trailingslashit( self::snapshots_dir() ) . 'original.json';
-		if ( ! file_exists( $file ) ) {
-			self::write_snapshot(
-				'original.json',
-				__( 'original (before first change)', 'blockwright-blocks' )
-			);
+		$dir = trailingslashit( self::snapshots_dir() );
+		if ( file_exists( $dir . self::original_id() ) ) {
+			return;
 		}
+		$legacy = $dir . 'original.json';
+		if ( file_exists( $legacy ) ) {
+			$snap = wp_json_file_decode( $legacy, array( 'associative' => true ) );
+			if ( is_array( $snap ) && get_stylesheet() === ( $snap['theme'] ?? '' ) ) {
+				return;
+			}
+		}
+		self::write_snapshot(
+			self::original_id(),
+			__( 'original (before first change)', 'blockwright-blocks' )
+		);
+	}
+
+	/**
+	 * The active theme's original-baseline file name.
+	 *
+	 * @return string
+	 */
+	private static function original_id() {
+		return 'original-' . sanitize_file_name( get_stylesheet() ) . '.json';
+	}
+
+	/**
+	 * Whether a snapshot file name is an original baseline (per theme, or the 1.3.x shared one).
+	 *
+	 * @param string $id Snapshot file name.
+	 * @return bool
+	 */
+	private static function is_original( $id ) {
+		return 'original.json' === $id || ( 0 === strpos( $id, 'original-' ) && '.json' === substr( $id, -5 ) );
 	}
 
 	/**
 	 * Write a snapshot file capturing current state.
 	 *
-	 * @param string $name  File name.
-	 * @param string $label Human label.
+	 * @param string $name     File name.
+	 * @param string $label    Human label.
+	 * @param string $category The module that changed, or '' for the original baseline.
 	 * @return string|\WP_Error Absolute path, or error.
 	 */
 	private static function write_snapshot( $name, $label, $category = '' ) {
@@ -545,22 +690,19 @@ class Write_Engine {
 			return $fs;
 		}
 		self::harden_dir( $fs, $dir );
-		// Store the raw theme.json TEXT, not a decoded copy, so a restore rewrites the
-		// exact original bytes (formatting and empty objects included), not a re-encode.
-		$theme_json_raw = $fs->exists( self::theme_json_path() )
-			? (string) $fs->get_contents( self::theme_json_path() )
-			: '';
-		$post_id        = self::user_global_styles_post_id();
-		$snap           = array(
+		// Capture the whole applied design for this theme (every module), not a slice, so a
+		// restore point is a full checkpoint, plus the user record it sat under.
+		$post_id = self::user_global_styles_post_id();
+		$snap    = array(
 			'time'               => microtime( true ),
 			'label'              => (string) $label,
 			'category'           => (string) $category,
 			'theme'              => get_stylesheet(),
-			'theme_json_raw'     => $theme_json_raw,
+			'applied'            => self::applied(),
 			'user_global_styles' => $post_id ? (string) get_post( $post_id )->post_content : null,
 		);
-		$path           = trailingslashit( $dir ) . $name;
-		$ok             = $fs->put_contents( $path, wp_json_encode( $snap, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES ), FS_CHMOD_FILE );
+		$path    = trailingslashit( $dir ) . $name;
+		$ok      = $fs->put_contents( $path, wp_json_encode( $snap, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES ), FS_CHMOD_FILE );
 		return $ok ? $path : new \WP_Error( 'bw_snapshot_failed', 'Writing the snapshot failed.', array( 'status' => 500 ) );
 	}
 
@@ -585,8 +727,8 @@ class Write_Engine {
 	 *   stops directory listing on any server.
 	 * - `.htaccess` denying direct file access on Apache/LiteSpeed (the common shared-host
 	 *   stack), guarded for both Apache 2.4 (`Require all denied`) and 2.2 (`Deny from
-	 *   all`). Inert on nginx, which ignores it - hosts there rely on the index.php + the
-	 *   unguessable-by-default nature and the low sensitivity of the data.
+	 *   all`). Inert on nginx, which ignores it - hosts there rely on the index.php and the
+	 *   low sensitivity of the data (colors and the site's style settings).
 	 *
 	 * @param \WP_Filesystem_Base $fs  Filesystem handle.
 	 * @param string              $dir Snapshots directory (already created).
@@ -629,39 +771,38 @@ class Write_Engine {
 	}
 
 	/**
-	 * Set $value at $path in an object-decoded theme.json tree (creating intermediate
-	 * objects). Mutates $tree in place (stdClass is by-reference).
+	 * Read the value at $path in an array, or null.
 	 *
-	 * @param object $tree  Object tree from wp_json_file_decode().
-	 * @param array  $path  Key path.
-	 * @param mixed  $value Value to set.
+	 * @param array $data Source.
+	 * @param array $path Key path.
+	 * @return mixed
 	 */
-	private static function set_by_path_obj( $tree, $path, $value ) {
-		$ref  = $tree;
-		$last = array_pop( $path );
+	public static function get_in( $data, $path ) {
 		foreach ( $path as $key ) {
-			if ( ! isset( $ref->$key ) || ! is_object( $ref->$key ) ) {
-				$ref->$key = new \stdClass();
+			if ( ! is_array( $data ) || ! isset( $data[ $key ] ) ) {
+				return null;
 			}
-			$ref = $ref->$key;
+			$data = $data[ $key ];
 		}
-		$ref->$last = $value;
+		return $data;
 	}
 
 	/**
-	 * Write raw theme.json bytes verbatim (used by restore, so the exact original file is
-	 * put back). No re-encode.
+	 * Return $data with $value set at $path, creating intermediate arrays.
 	 *
-	 * @param string $text Full file contents.
-	 * @return true|\WP_Error
+	 * @param array $data  Source.
+	 * @param array $path  Key path.
+	 * @param mixed $value Value.
+	 * @return array
 	 */
-	private static function write_theme_json_raw( $text ) {
-		$fs = self::filesystem();
-		if ( is_wp_error( $fs ) ) {
-			return $fs;
+	public static function set_in( $data, $path, $value ) {
+		$key = array_shift( $path );
+		if ( empty( $path ) ) {
+			$data[ $key ] = $value;
+			return $data;
 		}
-		$ok = $fs->put_contents( self::theme_json_path(), $text, FS_CHMOD_FILE );
-		return $ok ? true : new \WP_Error( 'bw_write_failed', 'Writing theme.json failed.', array( 'status' => 500 ) );
+		$data[ $key ] = self::set_in( isset( $data[ $key ] ) && is_array( $data[ $key ] ) ? $data[ $key ] : array(), $path, $value );
+		return $data;
 	}
 
 	/**

@@ -1,0 +1,37 @@
+=== Blockwright Blocks changelog ===
+
+The current release is in readme.txt; earlier releases are below.
+
+= 1.3.1 =
+Clearer contrast feedback in the color designer.
+* The brand-color contrast indicator now tells you when a color you picked had to be nudged to stay readable, instead of always showing a plain pass. If your color is too light or too dark for a background, that mode is marked "adjusted" so you know it was fitted, not used exactly as entered.
+
+= 1.3.0 =
+New: a visual color designer in your dashboard.
+* Design tool (Appearance, then Design): pick a brand color and generate a full, accessible, adaptive color scheme, previewed live in light and dark, then apply it to your theme in one click. Start from sixteen one-click presets, or dial in your exact brand color.
+* Every scheme meets WCAG AA contrast automatically, in both light and dark.
+* Primary buttons are tuned for real perceived contrast, so a call to action stays crisp and legible in every scheme, not just technically passing.
+* Every change saves a restore point you can roll back to; Restore and Delete now confirm before they act.
+* Typography, spacing, and a digital design assistant are coming to the same screen.
+
+= 1.2.0 =
+Icon Box layout and alignment controls.
+* Icon Box: new Icon position control to place the icon above (default), to the left, or to the right of the heading and text.
+* Icon Box: new Icon size control, from extra small to extra large, scaling fluidly with the viewport.
+* Icon Box: in the left and right layouts the icon is optically centered on the heading's cap height, so it lines up with the letters instead of sitting too high; an opt-in Top / Center / Bottom alignment handles a larger icon beside body text.
+* Icon Box: the icon keeps its chosen side on right-to-left sites.
+* Icon Box: newly inserted blocks now default to a centered layout.
+
+= 1.1.0 =
+Adds four new blocks, a curated icon collection, and dynamic content.
+* New block: Icon Box. An icon, heading, text, and an optional link, with an icon that follows the visitor's light or dark color scheme.
+* New block: Icon List. A list where each row leads with an icon; reorder rows like an ordinary list, and the row text and its icon scale together.
+* New block: Stat Counter. A headline number with an optional prefix, suffix, and count-up animation, plus a label.
+* New block: Timeline. A vertical sequence of dated entries, each with an icon, heading, and text.
+* New block: Light / Dark Toggle. Lets a visitor switch the color scheme for their visit; the choice lasts the session and returns to their system setting next time.
+* Dynamic content: connect a paragraph, heading, image, or button to post data (title, excerpt, date, author, featured image) or site data (title, tagline, URL) with no code, from a visible panel. Connected blocks preview with real content in the template editor.
+* Icon collection: 298 Phosphor icons register into the WordPress 7.1 icon library as their own tab in the Icon block picker, with a searchable grid and a per-icon custom SVG field. On earlier WordPress versions the blocks still work and simply omit the icon.
+* Stamp block: its default color now follows the color scheme, re-hueing with the active color variation.
+
+= 1.0.0 =
+* Initial public release: Stamp block and an optional dark mode Site Logo.

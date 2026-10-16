@@ -81,12 +81,47 @@ function enqueue() {
 			array(
 				'basePalette' => current_theme_palette(),
 				'presets'     => theme_color_presets(),
+				'applied'     => \Blockwright_Blocks\DesignSystem\Write_Engine::applied()['color'] ?? null,
+				'themeGate'   => theme_gate(),
+				'reviewAsk'   => \Blockwright_Blocks\Engagement\review_link_allowed(),
+				'reviewUrl'   => \Blockwright_Blocks\Engagement\REVIEW_URL,
 				'siteUrl'     => home_url( '/' ),
 			),
 			// Escape </script> and & for safe embedding in an inline <script> block.
 			JSON_HEX_TAG | JSON_HEX_AMP
 		) . ';',
 		'before'
+	);
+}
+
+/**
+ * Whether the active theme is Blockwright (or a child of it), and where to get it if not. The
+ * color designer generates the Blockwright theme's own color tokens, so on another theme it has
+ * nothing to apply to; the screen then explains that and links to install or activate it.
+ *
+ * @return array { ok, installed, can, url }: can = this user may install or activate it; url is
+ *               the install preview, the theme's details (to activate it), or the wp.org page
+ *               when the user cannot.
+ */
+function theme_gate() {
+	$ok = 'blockwright' === wp_get_theme( get_template() )->get( 'TextDomain' );
+	if ( $ok ) {
+		return array( 'ok' => true );
+	}
+	$installed = wp_get_theme( 'blockwright' )->exists();
+	$can       = $installed ? current_user_can( 'switch_themes' ) : current_user_can( 'install_themes' );
+	if ( ! $can ) {
+		$url = 'https://wordpress.org/themes/blockwright/';
+	} elseif ( $installed ) {
+		$url = admin_url( 'themes.php?theme=blockwright' );
+	} else {
+		$url = admin_url( 'theme-install.php?theme=blockwright' );
+	}
+	return array(
+		'ok'        => false,
+		'installed' => $installed,
+		'can'       => $can,
+		'url'       => $url,
 	);
 }
 
@@ -137,8 +172,9 @@ function theme_color_presets() {
 }
 
 /**
- * The active theme's palette (theme origin), as { slug, name, color } entries - the
- * foundation the color recipe generates from.
+ * The active theme's palette (theme origin, including any applied scheme the supplier
+ * hands to that layer), as { slug, name, color } entries - the foundation the color recipe
+ * generates from.
  *
  * @return array[]
  */
@@ -172,7 +208,10 @@ function render_page() {
 	// Brand carried as the page title itself (a normal h1, like "WooCommerce Settings") - it
 	// attributes the screen to the plugin family with no extra height and no bespoke widget.
 	echo '<h1>' . esc_html__( 'Blockwright Design', 'blockwright-blocks' ) . '</h1>';
-	echo '<p class="bw-ds-intro">' . esc_html__( 'Control your design system at the source.', 'blockwright-blocks' ) . '<br>' . esc_html__( 'Each module writes your theme\'s tokens directly, drift-free. Nothing is saved until you apply it.', 'blockwright-blocks' ) . '</p>';
+	// On another theme the screen only explains that it needs Blockwright; skip the tool's intro.
+	if ( ! empty( theme_gate()['ok'] ) ) {
+		echo '<p class="bw-ds-intro">' . esc_html__( 'Control your design system at the source.', 'blockwright-blocks' ) . '<br>' . esc_html__( 'Each module sets your theme\'s design tokens, and what you apply stays through theme updates. Nothing is saved until you apply it.', 'blockwright-blocks' ) . '</p>';
+	}
 	echo '<div id="bw-design-system-root"></div>';
 	echo '</div>';
 }

@@ -5,6 +5,7 @@
 	<!-- What to scan (plugin PHP only). Block PHP is authored under src/<slug>/ (render.php);
 	     build/ is the @wordpress/scripts output and is not linted. -->
 	<file>blockwright-blocks.php</file>
+	<file>uninstall.php</file>
 	<file>inc</file>
 	<file>src</file>
 

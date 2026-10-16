@@ -2,14 +2,14 @@
 # This file is distributed under the GPL-2.0-or-later.
 msgid ""
 msgstr ""
-"Project-Id-Version: Blockwright Blocks 1.3.1\n"
+"Project-Id-Version: Blockwright Blocks 1.4.0\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/blockwright-blocks\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-09-21T21:23:08+00:00\n"
+"POT-Creation-Date: 2026-10-15T22:16:37+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: blockwright-blocks\n"
@@ -39,16 +39,16 @@ msgstr ""
 msgid "Design"
 msgstr ""
 
-#: inc/admin-page.php:174
+#: inc/admin-page.php:210
 msgid "Blockwright Design"
 msgstr ""
 
-#: inc/admin-page.php:175
+#: inc/admin-page.php:213
 msgid "Control your design system at the source."
 msgstr ""
 
-#: inc/admin-page.php:175
-msgid "Each module writes your theme's tokens directly, drift-free. Nothing is saved until you apply it."
+#: inc/admin-page.php:213
+msgid "Each module sets your theme's design tokens, and what you apply stays through theme updates. Nothing is saved until you apply it."
 msgstr ""
 
 #: inc/bindings.php:106
@@ -61,18 +61,47 @@ msgstr ""
 msgid "Site (Blockwright)"
 msgstr ""
 
-#: inc/class-write-engine.php:101
+#: inc/class-write-engine.php:103
 msgid "applied"
 msgstr ""
 
-#: inc/class-write-engine.php:509
-#: src/design-system/index.js:1737
-#: src/design-system/index.js:1834
+#: inc/class-write-engine.php:368
+msgid "copied to site styles"
+msgstr ""
+
+#: inc/class-write-engine.php:624
+#: src/design-system/index.js:1929
+#: src/design-system/index.js:2027
 msgid "Color"
 msgstr ""
 
-#: inc/class-write-engine.php:526
+#: inc/class-write-engine.php:652
 msgid "original (before first change)"
+msgstr ""
+
+#: inc/engagement.php:73
+msgid "Blockwright Blocks is built to pair with the free Blockwright theme: its Design tool is made for it, and the blocks pick up its colors and light and dark modes."
+msgstr ""
+
+#: inc/engagement.php:75
+msgid "Activate the Blockwright theme"
+msgstr ""
+
+#: inc/engagement.php:75
+#: src/design-system/index.js:2177
+msgid "Get the Blockwright theme"
+msgstr ""
+
+#: inc/engagement.php:113
+msgid "Rate it"
+msgstr ""
+
+#: inc/engagement.php:132
+msgid "If Blockwright Blocks helps your work, a review helps others find it:"
+msgstr ""
+
+#: inc/engagement.php:134
+msgid "review it on WordPress.org"
 msgstr ""
 
 #: inc/icons.php:177
@@ -577,6 +606,7 @@ msgid "Trash"
 msgstr ""
 
 #: inc/icons.php:314
+#: src/design-system/index.js:1913
 msgid "Copy"
 msgstr ""
 
@@ -1273,20 +1303,20 @@ msgstr ""
 msgid "A curated set of icons for business and agency sites, filling the gaps in the default collection."
 msgstr ""
 
-#: inc/rest-api.php:114
+#: inc/rest-api.php:162
 msgid "Unknown design category."
 msgstr ""
 
-#: inc/rest-api.php:188
+#: inc/rest-api.php:309
 msgid "No palette to apply."
 msgstr ""
 
-#: inc/rest-api.php:193
+#: inc/rest-api.php:314
 msgid "A palette entry is malformed."
 msgstr ""
 
 #. translators: %s: color token slug.
-#: inc/rest-api.php:204
+#: inc/rest-api.php:325
 #, php-format
 msgid "A color value is not allowed (token %s)."
 msgstr ""
@@ -1371,465 +1401,515 @@ msgstr ""
 msgid "Remove"
 msgstr ""
 
-#: src/design-system/index.js:199
+#: src/design-system/index.js:279
 msgid "WCAG contrast"
 msgstr ""
 
-#: src/design-system/index.js:237
+#: src/design-system/index.js:317
 msgid "adjusted"
 msgstr ""
 
-#: src/design-system/index.js:295
+#: src/design-system/index.js:375
 msgid "Brand & primary ramp"
 msgstr ""
 
-#: src/design-system/index.js:296
+#: src/design-system/index.js:376
 msgid "primary is the exact brand color you entered; primary-50 to 950 is its accessible tonal scale"
 msgstr ""
 
-#: src/design-system/index.js:305
+#: src/design-system/index.js:385
 msgid "Links"
 msgstr ""
 
-#: src/design-system/index.js:306
+#: src/design-system/index.js:386
 msgid "Link text and its states"
 msgstr ""
 
-#: src/design-system/index.js:311
+#: src/design-system/index.js:391
 msgid "Buttons"
 msgstr ""
 
-#: src/design-system/index.js:312
+#: src/design-system/index.js:392
 msgid "Fill and Soft button fills"
 msgstr ""
 
-#: src/design-system/index.js:317
+#: src/design-system/index.js:397
 msgid "Neutrals"
 msgstr ""
 
-#: src/design-system/index.js:318
+#: src/design-system/index.js:398
 msgid "The gray ramp"
 msgstr ""
 
-#: src/design-system/index.js:324
+#: src/design-system/index.js:404
 msgid "Borders, dividers & focus"
 msgstr ""
 
-#: src/design-system/index.js:325
+#: src/design-system/index.js:405
 msgid "Hairlines, dividers, outlines, focus ring"
 msgstr ""
 
-#: src/design-system/index.js:337
+#: src/design-system/index.js:417
 msgid "Surfaces"
 msgstr ""
 
-#: src/design-system/index.js:338
+#: src/design-system/index.js:418
 msgid "Page and panel backgrounds"
 msgstr ""
 
-#: src/design-system/index.js:343
+#: src/design-system/index.js:423
 msgid "Text"
 msgstr ""
 
-#: src/design-system/index.js:344
+#: src/design-system/index.js:424
 msgid "Body and muted text"
 msgstr ""
 
-#: src/design-system/index.js:349
+#: src/design-system/index.js:429
 msgid "Danger"
 msgstr ""
 
-#: src/design-system/index.js:350
+#: src/design-system/index.js:430
 msgid "Error / destructive - fixed meaning"
 msgstr ""
 
-#: src/design-system/index.js:356
+#: src/design-system/index.js:436
 msgid "Success"
 msgstr ""
 
-#: src/design-system/index.js:357
+#: src/design-system/index.js:437
 msgid "Positive / confirmation - fixed meaning"
 msgstr ""
 
-#: src/design-system/index.js:366
+#: src/design-system/index.js:446
 msgid "Warning"
 msgstr ""
 
-#: src/design-system/index.js:367
+#: src/design-system/index.js:447
 msgid "Caution - fixed meaning"
 msgstr ""
 
-#: src/design-system/index.js:373
+#: src/design-system/index.js:453
 msgid "Media"
 msgstr ""
 
-#: src/design-system/index.js:374
+#: src/design-system/index.js:454
 msgid "Overlays and text over media"
 msgstr ""
 
-#: src/design-system/index.js:379
+#: src/design-system/index.js:459
 msgid "Aliases & misc"
 msgstr ""
 
-#: src/design-system/index.js:380
+#: src/design-system/index.js:460
 msgid "Named aliases and focus ring"
 msgstr ""
 
-#: src/design-system/index.js:491
-#: src/design-system/index.js:748
-#: src/design-system/index.js:809
+#: src/design-system/index.js:571
+#: src/design-system/index.js:828
+#: src/design-system/index.js:889
 msgid "Light"
 msgstr ""
 
-#: src/design-system/index.js:492
-#: src/design-system/index.js:749
-#: src/design-system/index.js:809
+#: src/design-system/index.js:572
+#: src/design-system/index.js:829
+#: src/design-system/index.js:889
 msgid "Dark"
 msgstr ""
 
-#: src/design-system/index.js:495
+#: src/design-system/index.js:575
 msgid "The quick brown fox"
 msgstr ""
 
-#: src/design-system/index.js:499
+#: src/design-system/index.js:579
 msgid "Body copy with an <a1>inline link</a1> and a <a2>visited link</a2> in running text."
 msgstr ""
 
-#: src/design-system/index.js:528
+#: src/design-system/index.js:608
 msgid "Buttons - Fill / Soft / Outline / Subtle"
 msgstr ""
 
-#: src/design-system/index.js:542
+#: src/design-system/index.js:622
 msgid "Fill"
 msgstr ""
 
-#: src/design-system/index.js:549
+#: src/design-system/index.js:629
 msgid "Soft"
 msgstr ""
 
-#: src/design-system/index.js:560
+#: src/design-system/index.js:640
 msgid "Outline"
 msgstr ""
 
-#: src/design-system/index.js:567
+#: src/design-system/index.js:647
 msgid "Subtle"
 msgstr ""
 
-#: src/design-system/index.js:571
+#: src/design-system/index.js:651
 msgid "Form controls - checkbox, radio, focused field"
 msgstr ""
 
-#: src/design-system/index.js:604
+#: src/design-system/index.js:684
 msgid "Checkbox"
 msgstr ""
 
-#: src/design-system/index.js:616
+#: src/design-system/index.js:696
 msgid "Radio"
 msgstr ""
 
-#: src/design-system/index.js:627
+#: src/design-system/index.js:707
 msgid "Focused field"
 msgstr ""
 
-#: src/design-system/index.js:631
+#: src/design-system/index.js:711
 msgid "Editorial - site title, eyebrow, badge, callout"
 msgstr ""
 
-#: src/design-system/index.js:647
+#: src/design-system/index.js:727
 msgid "Acme Studio"
 msgstr ""
 
-#: src/design-system/index.js:650
+#: src/design-system/index.js:730
 msgid "What we do"
 msgstr ""
 
-#: src/design-system/index.js:653
+#: src/design-system/index.js:733
 msgid "Design that adapts"
 msgstr ""
 
-#: src/design-system/index.js:659
+#: src/design-system/index.js:739
 msgid "New"
 msgstr ""
 
-#: src/design-system/index.js:669
+#: src/design-system/index.js:749
 msgid "A callout band draws the eye to a note or aside, tinted with your brand color."
 msgstr ""
 
 #. translators: %s: token slug.
-#: src/design-system/index.js:720
+#: src/design-system/index.js:800
 #, js-format
 msgid "Copy reference for %s"
 msgstr ""
 
-#: src/design-system/index.js:899
+#: src/design-system/index.js:980
 msgid "Restore failed."
 msgstr ""
 
-#: src/design-system/index.js:921
+#: src/design-system/index.js:1002
 msgid "Delete failed."
 msgstr ""
 
-#: src/design-system/index.js:956
+#: src/design-system/index.js:1037
 msgid "Restore points"
 msgstr ""
 
-#: src/design-system/index.js:961
+#: src/design-system/index.js:1042
 msgid "None yet. Each color scheme you apply becomes a restore point."
 msgstr ""
 
-#: src/design-system/index.js:986
-#: src/design-system/index.js:1073
+#: src/design-system/index.js:1067
+#: src/design-system/index.js:1154
 msgid "Restore"
 msgstr ""
 
-#: src/design-system/index.js:1001
-#: src/design-system/index.js:1072
+#: src/design-system/index.js:1082
+#: src/design-system/index.js:1153
 msgid "Delete"
 msgstr ""
 
 #. translators: %d: number of restore points kept per module.
-#: src/design-system/index.js:1018
+#: src/design-system/index.js:1099
 #, js-format
 msgid "Keeps the last %d per module; older ones are removed automatically."
 msgstr ""
 
-#: src/design-system/index.js:1035
+#: src/design-system/index.js:1116
 msgid "Delete restore point"
 msgstr ""
 
-#: src/design-system/index.js:1036
+#: src/design-system/index.js:1117
 msgid "Restore colors"
 msgstr ""
 
-#: src/design-system/index.js:1044
+#: src/design-system/index.js:1125
 msgid "This permanently deletes this restore point. It cannot be undone."
 msgstr ""
 
-#: src/design-system/index.js:1048
+#: src/design-system/index.js:1129
 msgid "This replaces your current colors with this restore point and reloads the page."
 msgstr ""
 
-#: src/design-system/index.js:1059
+#: src/design-system/index.js:1140
+#: src/design-system/index.js:1905
 msgid "Cancel"
 msgstr ""
 
-#: src/design-system/index.js:1179
+#: src/design-system/index.js:1249
 msgid "Applied, and a restore point was saved."
 msgstr ""
 
-#: src/design-system/index.js:1197
+#: src/design-system/index.js:1271
 msgid "Apply failed."
 msgstr ""
 
 #. translators: %s: technical error detail from the color engine.
-#: src/design-system/index.js:1209
+#: src/design-system/index.js:1283
 #, js-format
 msgid "Could not generate the color scheme: %s"
 msgstr ""
 
 #. translators: 1: light-mode hex, 2: dark-mode hex.
-#: src/design-system/index.js:1257
+#: src/design-system/index.js:1331
 #, js-format
 msgid "This color is low-contrast on both backgrounds, so light mode uses %1$s and dark mode uses %2$s to stay legible."
 msgstr ""
 
 #. translators: %s is the darkened hex used in light mode.
-#: src/design-system/index.js:1269
+#: src/design-system/index.js:1343
 #, js-format
 msgid "Too light to read on a light background, so light mode uses %s (your exact color is kept in dark mode)."
 msgstr ""
 
 #. translators: %s is the lightened hex used in dark mode.
-#: src/design-system/index.js:1280
+#: src/design-system/index.js:1354
 #, js-format
 msgid "Too dark to read on a dark background, so dark mode uses %s (your exact color is kept in light mode)."
 msgstr ""
 
-#: src/design-system/index.js:1290
+#: src/design-system/index.js:1364
 msgid "Very saturated (near-neon) - it will look vivid. Pick a less saturated color if you want to tone it down (Colorfulness only affects the derived shades, not your exact brand color)."
 msgstr ""
 
-#: src/design-system/index.js:1323
+#: src/design-system/index.js:1397
 msgid "Brand color"
 msgstr ""
 
-#: src/design-system/index.js:1341
+#: src/design-system/index.js:1415
 msgid "Choose brand color"
 msgstr ""
 
-#: src/design-system/index.js:1370
+#: src/design-system/index.js:1444
 msgid "Done"
 msgstr ""
 
-#: src/design-system/index.js:1388
+#: src/design-system/index.js:1462
 msgid "A near-neutral color has no hue to build from, so this makes a grayscale scheme. Pick a more saturated color for a colored one."
 msgstr ""
 
-#: src/design-system/index.js:1392
+#: src/design-system/index.js:1466
 msgid "Select a color to build the palette."
 msgstr ""
 
-#: src/design-system/index.js:1405
+#: src/design-system/index.js:1479
 msgid "Colorfulness"
 msgstr ""
 
-#: src/design-system/index.js:1406
+#: src/design-system/index.js:1480
 msgid "Saturation of the generated shades, up to the Chroma limit."
 msgstr ""
 
-#: src/design-system/index.js:1424
+#: src/design-system/index.js:1498
 msgid "Advanced"
 msgstr ""
 
-#: src/design-system/index.js:1428
+#: src/design-system/index.js:1502
 msgid "Chroma limit"
 msgstr ""
 
-#: src/design-system/index.js:1429
+#: src/design-system/index.js:1503
 msgid "Ceiling that keeps vivid hues (greens, reds, violets) from going neon. Softer hues like gold or teal never reach it."
 msgstr ""
 
-#: src/design-system/index.js:1449
+#: src/design-system/index.js:1523
 msgid "Or start from a preset"
 msgstr ""
 
-#: src/design-system/index.js:1537
+#: src/design-system/index.js:1614
 msgid "Applied"
 msgstr ""
 
 #. translators: %s: preset name, or the brand color as a hex code.
-#: src/design-system/index.js:1540
+#: src/design-system/index.js:1617
 #, js-format
 msgid "Apply %s"
 msgstr ""
 
-#: src/design-system/index.js:1555
+#: src/design-system/index.js:1632
 msgid "This combination cannot meet WCAG AA - adjust the color or chroma."
 msgstr ""
 
-#: src/design-system/index.js:1577
+#: src/design-system/index.js:1654
 msgid "View your site"
 msgstr ""
 
-#: src/design-system/index.js:1584
-#: src/design-system/index.js:1586
+#: src/design-system/index.js:1665
+msgid "Rate it on WordPress.org"
+msgstr ""
+
+#: src/design-system/index.js:1676
+#: src/design-system/index.js:1678
 msgid "Dismiss"
 msgstr ""
 
-#: src/design-system/index.js:1599
+#: src/design-system/index.js:1691
 msgid "Preview"
 msgstr ""
 
-#: src/design-system/index.js:1602
+#: src/design-system/index.js:1694
 msgid "Your color scheme in context, light and dark. Text and controls always meet WCAG AA."
 msgstr ""
 
-#: src/design-system/index.js:1614
+#: src/design-system/index.js:1706
 msgid "Changes with your brand color"
 msgstr ""
 
-#: src/design-system/index.js:1618
+#: src/design-system/index.js:1710
 msgid "The tokens the controls drive - re-hued from your seed, or derived from the tinted neutrals."
 msgstr ""
 
-#: src/design-system/index.js:1636
+#: src/design-system/index.js:1728
 msgid "Hide colors independent of your brand color"
 msgstr ""
 
-#: src/design-system/index.js:1640
+#: src/design-system/index.js:1732
 msgid "Show colors independent of your brand color"
 msgstr ""
 
-#: src/design-system/index.js:1648
+#: src/design-system/index.js:1740
 msgid "Independent of your brand color"
 msgstr ""
 
-#: src/design-system/index.js:1652
+#: src/design-system/index.js:1744
 msgid "Reference only. Fixed meanings (a red error stays red) the settings do not change."
 msgstr ""
 
 #. translators: %s: the copied CSS variable reference.
-#: src/design-system/index.js:1671
+#: src/design-system/index.js:1763
 #, js-format
 msgid "Copied %s"
 msgstr ""
 
-#: src/design-system/index.js:1739
+#: src/design-system/index.js:1842
+msgid "Copied to your site styles, and a restore point was saved."
+msgstr ""
+
+#: src/design-system/index.js:1853
+msgid "Copy failed."
+msgstr ""
+
+#: src/design-system/index.js:1863
+msgid "Keeping these colors without the plugin?"
+msgstr ""
+
+#: src/design-system/index.js:1872
+msgid "Copy to site styles"
+msgstr ""
+
+#: src/design-system/index.js:1885
+msgid "Copy colors to site styles"
+msgstr ""
+
+#: src/design-system/index.js:1894
+msgid "Your current colors are saved into your site styles (Appearance > Editor > Styles), so they stay if you deactivate this plugin. Colors kept there no longer get fixes from theme updates."
+msgstr ""
+
+#: src/design-system/index.js:1931
 msgid "Ready"
 msgstr ""
 
-#: src/design-system/index.js:1743
-msgid "Pick a brand color and generate a full, accessible, adaptive light/dark palette. Apply it to your theme."
+#: src/design-system/index.js:1935
+msgid "Pick a brand color and generate a full, accessible, adaptive light/dark palette. Apply it to your site."
 msgstr ""
 
-#: src/design-system/index.js:1750
+#: src/design-system/index.js:1942
 msgid "Open Color"
 msgstr ""
 
-#: src/design-system/index.js:1756
-#: src/design-system/index.js:1835
-#: src/design-system/index.js:1885
+#: src/design-system/index.js:1948
+#: src/design-system/index.js:2028
+#: src/design-system/index.js:2220
 msgid "Typography"
 msgstr ""
 
-#: src/design-system/index.js:1758
-#: src/design-system/index.js:1772
-#: src/design-system/index.js:1799
+#: src/design-system/index.js:1950
+#: src/design-system/index.js:1964
+#: src/design-system/index.js:1992
 msgid "Coming soon"
 msgstr ""
 
-#: src/design-system/index.js:1762
+#: src/design-system/index.js:1954
 msgid "Type families and a fluid type scale for headings and body, previewed live in context."
 msgstr ""
 
-#: src/design-system/index.js:1770
-#: src/design-system/index.js:1836
-#: src/design-system/index.js:1894
+#: src/design-system/index.js:1962
+#: src/design-system/index.js:2029
+#: src/design-system/index.js:2229
 msgid "Spacing"
 msgstr ""
 
-#: src/design-system/index.js:1776
+#: src/design-system/index.js:1968
 msgid "Tune the fluid spacing scale and rhythm every block and pattern inherits."
 msgstr ""
 
-#: src/design-system/index.js:1786
+#: src/design-system/index.js:1978
 msgid "Every change across any module saves a restore point here. Roll back or clear old ones."
 msgstr ""
 
-#: src/design-system/index.js:1797
-#: src/design-system/index.js:1837
-#: src/design-system/index.js:1903
+#: src/design-system/index.js:1990
+#: src/design-system/index.js:2030
+#: src/design-system/index.js:2238
 msgid "Autowright"
 msgstr ""
 
-#: src/design-system/index.js:1803
+#: src/design-system/index.js:1996
+#: src/design-system/index.js:2239
 msgid "Your design assistant: describe the feel you want and let it propose a color scheme, using your own provider key. Every suggestion still runs through the same accessible, reversible apply."
 msgstr ""
 
 #. translators: %s: module name.
-#: src/design-system/index.js:1820
+#: src/design-system/index.js:2013
 #, js-format
 msgid "%s is coming soon"
 msgstr ""
 
-#: src/design-system/index.js:1833
+#: src/design-system/index.js:2026
 msgid "Overview"
 msgstr ""
 
-#: src/design-system/index.js:1856
+#: src/design-system/index.js:2139
+msgid "The Design screen is for the Blockwright theme"
+msgstr ""
+
+#: src/design-system/index.js:2146
+msgid "The Design tool is built for the free Blockwright theme, which this site is not using. Ask a site administrator to switch to it. The plugin's blocks work with any block theme."
+msgstr ""
+
+#: src/design-system/index.js:2151
+msgid "The Design tool is built for the Blockwright theme, which is installed but not active on this site. Activate it to use this screen. The plugin's blocks work with any block theme."
+msgstr ""
+
+#: src/design-system/index.js:2156
+msgid "The Design tool is built for the free Blockwright theme, which this site is not using. Install it from WordPress.org to use this screen. The plugin's blocks work with any block theme."
+msgstr ""
+
+#: src/design-system/index.js:2167
+msgid "About the Blockwright theme"
+msgstr ""
+
+#: src/design-system/index.js:2173
+msgid "Activate Blockwright"
+msgstr ""
+
+#: src/design-system/index.js:2190
 msgid "This screen needs a Blockwright-style theme active (it reads the theme palette)."
 msgstr ""
 
-#: src/design-system/index.js:1886
+#: src/design-system/index.js:2221
 msgid "Type families and a fluid type scale for headings and body, built on the same token engine and previewed live in light and dark."
 msgstr ""
 
-#: src/design-system/index.js:1895
+#: src/design-system/index.js:2230
 msgid "A fluid spacing scale and vertical rhythm every block and pattern inherits, tuned from one place."
-msgstr ""
-
-#: src/design-system/index.js:1904
-msgid "Your design assistant: describe the look you want and get a proposed color scheme, using your own provider key so no credentials pass through us. Every suggestion runs through the same accessible, reversible apply as the manual controls."
 msgstr ""
 
 #: src/icon-box/index.js:80

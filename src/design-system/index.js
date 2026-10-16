@@ -8,8 +8,8 @@
  * component's own guidance.
  *
  * The Color module: pick a brand color + a few bounded knobs, preview a full accessible scheme
- * live (the shared recipe runs in the browser), and Apply it (which writes theme.json through the
- * server-side write engine, snapshotting first). One-click presets apply the theme's shipped
+ * live (the shared recipe runs in the browser), and Apply it (which stores it through the
+ * server-side write engine, snapshotting first; the theme's own files are never written). One-click presets apply the theme's shipped
  * schemes. Below the task, the full palette as a token inventory grouped by role - tonal ramps as
  * horizontal strips, semantic tokens as adaptive split chips, click-to-copy each token's reference
  * - split into what the brand color drives vs what is independent. Restore points (shared across
@@ -48,6 +48,86 @@ import './style.scss';
 const DATA = window.bwDesignSystem || {};
 const BASE_PALETTE = Array.isArray(DATA.basePalette) ? DATA.basePalette : [];
 const PRESETS = Array.isArray(DATA.presets) ? DATA.presets : [];
+// The applied color scheme as stored ({ values, inputs, label }), or null when none is applied.
+// Updated in place on Apply, so a module that remounts (switching tabs) reopens at what is
+// applied NOW, not at the page-load copy.
+let APPLIED = DATA.applied && DATA.applied.values ? DATA.applied : null;
+
+// Whether this page view may still offer the review link (the server's verdict at load; once
+// shown here it is not offered again until the next due date).
+let reviewDue = !!DATA.reviewAsk && !!DATA.reviewUrl;
+const canAskReview = () => {
+	const due = reviewDue;
+	reviewDue = false;
+	return due;
+};
+const reviewEvent = (event) =>
+	apiFetch({
+		path: '/blockwright/v1/review',
+		method: 'POST',
+		data: { event },
+	}).catch(() => {});
+
+/**
+ * Generate a scheme from the color controls - the one call both the live preview and the
+ * on-load refresh use, so they can never disagree.
+ *
+ * @param {string} seed      Brand color (hex).
+ * @param {number} vividness Colorfulness control.
+ * @param {number} chroma    Chroma-limit control.
+ * @return {Object|null} The engine result, { error } on failure, or null with no base palette.
+ */
+const generateScheme = (seed, vividness, chroma) => {
+	if (!BASE_PALETTE.length) {
+		return null;
+	}
+	const parsed = oklch(seed);
+	// A near-neutral seed has no hue to build from, so make a true grayscale scheme (chroma
+	// clamped to 0) rather than defaulting to a hue - black in, gray out, not surprise-blue.
+	const neutral = isNeutralSeed(seed);
+	const hue = !neutral && typeof parsed.h === 'number' ? parsed.h : 240;
+	const chromaCap = neutral ? 0 : chroma;
+	const tintChroma = neutral ? 0 : 0.01;
+	try {
+		// strict:false - if the active theme's palette lags this plugin (stale theme.json
+		// cache, or plugin updated ahead of the theme), generate what we can instead of
+		// breaking the whole tool on a slug the older theme has not registered yet.
+		// brandAnchor = the EXACT color the user entered. The engine keeps it verbatim for
+		// the `primary` (brand) token, adjusting only for contrast - so identity elements
+		// (the brand site title) show the actual entered color, not a re-lightened hue.
+		const anchorL =
+			parsed && typeof parsed.l === 'number' ? parsed.l : 0.66;
+		let anchorC = 0.15;
+		if (neutral) {
+			anchorC = 0;
+		} else if (parsed && typeof parsed.c === 'number') {
+			anchorC = parsed.c;
+		}
+		const brandAnchor = { l: anchorL, c: anchorC, h: hue };
+		return generateColorVariation(BASE_PALETTE, {
+			hue,
+			vividness,
+			chroma: chromaCap,
+			brandAnchor,
+			strict: false,
+			neutralTint: { hue, chroma: tintChroma },
+		});
+	} catch (e) {
+		return { error: e.message };
+	}
+};
+
+// The slugs a color scheme sets. The engine reports the same set for every seed, so it is
+// computed once and sent with every Apply (presets included): only these are stored, and every
+// other token keeps following the theme.
+let drivenCache = null;
+const drivenSlugs = () => {
+	if (null === drivenCache) {
+		const probe = generateScheme('#3b6fe0', 1, 0.15);
+		drivenCache = probe && probe.driven ? probe.driven : [];
+	}
+	return drivenCache.length ? drivenCache : undefined;
+};
 // Presets arranged by COLOR (OKLCH hue) so the chip grid reads as a spectrum sweep; the
 // achromatic Grayscale sorts last. Data-driven, so it holds regardless of the PHP order.
 const presetHue = (p) => {
@@ -859,11 +939,12 @@ function PaletteSection({ title, note, groups, map, announce }) {
 /**
  * Restore points. Fetches on mount and whenever `refreshKey` changes (so a module can refresh it
  * after Apply). Restore reloads the page (the screen re-reads the restored theme). Delete removes a
- * point; the pristine "original" baseline has no delete (the server protects it too).
- * @param root0
- * @param root0.refreshKey
- * @param root0.category   When set (e.g. 'color'), show only THIS module's restore points (plus the
- *                         shared "original" baseline). Omit to show every module's points (Overview).
+ * point; the theme's pristine "original" baseline has no delete (the server protects it too).
+ *
+ * @param {Object} root0            Props.
+ * @param {number} root0.refreshKey Bump to refetch the list.
+ * @param {string} [root0.category] When set (e.g. 'color'), show only THIS module's restore points
+ *                                  (plus the original baseline). Omit to show every module's points.
  */
 function RestorePoints({ refreshKey, category }) {
 	const [snapshots, setSnapshots] = useState([]);
@@ -944,9 +1025,9 @@ function RestorePoints({ refreshKey, category }) {
 			? s.label.toLowerCase().startsWith(category.toLowerCase() + ':')
 			: false;
 	};
-	const original = snapshots.find((s) => s.id === 'original.json');
+	const original = snapshots.find((s) => s.original);
 	const recent = snapshots
-		.filter((s) => s.id !== 'original.json' && inScope(s))
+		.filter((s) => !s.original && inScope(s))
 		.slice(0, CAP);
 	const shown = original ? [...recent, original] : recent;
 
@@ -985,7 +1066,7 @@ function RestorePoints({ refreshKey, category }) {
 									>
 										{__('Restore', 'blockwright-blocks')}
 									</Button>
-									{'original.json' !== s.id && (
+									{!s.original && (
 										<Button
 											variant="link"
 											isDestructive
@@ -1080,9 +1161,21 @@ function RestorePoints({ refreshKey, category }) {
 }
 
 function ColorModule({ onApplied }) {
-	const [seed, setSeed] = useState(INITIAL_SEED);
-	const [vividness, setVividness] = useState(1.0);
-	const [chroma, setChroma] = useState(0.15);
+	// Start from the inputs the applied scheme was made with, when they were stored, so the
+	// controls reopen where they were left instead of at the defaults.
+	const stored = (APPLIED && APPLIED.inputs) || {};
+	const storedPreset = stored.preset
+		? PRESETS.find((p) => p.slug === stored.preset)
+		: null;
+	const [seed, setSeed] = useState(
+		stored.seed ||
+			(storedPreset ? presetSpec(storedPreset).seedHex : INITIAL_SEED)
+	);
+	const [vividness, setVividness] = useState(stored.vividness ?? 1.0);
+	const [chroma, setChroma] = useState(
+		stored.chroma ??
+			(storedPreset ? presetSpec(storedPreset).chromaCap : 0.15)
+	);
 	const [busy, setBusy] = useState(false);
 	const [msg, setMsg] = useState(null);
 	const [snapKey, setSnapKey] = useState(0);
@@ -1099,45 +1192,10 @@ function ColorModule({ onApplied }) {
 	// preset change flips it true (the effect below, past the mount guard); Apply success resets it.
 	const [dirty, setDirty] = useState(false);
 
-	const result = useMemo(() => {
-		if (!BASE_PALETTE.length) {
-			return null;
-		}
-		const parsed = oklch(seed);
-		// A near-neutral seed has no hue to build from, so make a true grayscale scheme (chroma
-		// clamped to 0) rather than defaulting to a hue - black in, gray out, not surprise-blue.
-		const neutral = isNeutralSeed(seed);
-		const hue = !neutral && typeof parsed.h === 'number' ? parsed.h : 240;
-		const chromaCap = neutral ? 0 : chroma;
-		const tintChroma = neutral ? 0 : 0.01;
-		try {
-			// strict:false - if the active theme's palette lags this plugin (stale theme.json
-			// cache, or plugin updated ahead of the theme), generate what we can instead of
-			// breaking the whole tool on a slug the older theme has not registered yet.
-			// brandAnchor = the EXACT color the user entered. The engine keeps it verbatim for
-			// the `primary` (brand) token, adjusting only for contrast - so identity elements
-			// (the brand site title) show the actual entered color, not a re-lightened hue.
-			const anchorL =
-				parsed && typeof parsed.l === 'number' ? parsed.l : 0.66;
-			let anchorC = 0.15;
-			if (neutral) {
-				anchorC = 0;
-			} else if (parsed && typeof parsed.c === 'number') {
-				anchorC = parsed.c;
-			}
-			const brandAnchor = { l: anchorL, c: anchorC, h: hue };
-			return generateColorVariation(BASE_PALETTE, {
-				hue,
-				vividness,
-				chroma: chromaCap,
-				brandAnchor,
-				strict: false,
-				neutralTint: { hue, chroma: tintChroma },
-			});
-		} catch (e) {
-			return { error: e.message };
-		}
-	}, [seed, vividness, chroma]);
+	const result = useMemo(
+		() => generateScheme(seed, vividness, chroma),
+		[seed, vividness, chroma]
+	);
 
 	// Clear the apply message the instant any control changes, so a stale "Applied" can never
 	// sit there making it look like a new change was saved when it was not; and mark the state
@@ -1160,27 +1218,43 @@ function ColorModule({ onApplied }) {
 		}
 		const t = setTimeout(
 			() => setMsg(null),
-			'ok' === msg.type ? 6000 : 10000
+			'ok' === msg.type && !msg.review ? 6000 : 12000
 		);
 		return () => clearTimeout(t);
 	}, [msg]);
 
-	const applyPalette = async (palette, label) => {
+	const applyPalette = async (palette, label, inputs) => {
 		setBusy(true);
 		setMsg(null);
 		try {
 			await apiFetch({
 				path: '/blockwright/v1/design/apply',
 				method: 'POST',
-				data: { category: 'color', palette, label },
+				data: {
+					category: 'color',
+					palette,
+					label,
+					inputs,
+					// Only the tokens a scheme drives are stored; every other token keeps
+					// following the theme, so a theme update can still fix it.
+					driven: drivenSlugs(),
+				},
 			});
+			APPLIED = { values: palette, inputs, label };
+			// After a completed Apply is the moment to ask, at most: the server decides whether this
+			// user is due (a week after install, a month apart, three a year, never after a review).
+			const review = canAskReview();
 			setMsg({
 				type: 'ok',
 				text: __(
 					'Applied, and a restore point was saved.',
 					'blockwright-blocks'
 				),
+				review,
 			});
+			if (review) {
+				reviewEvent('shown');
+			}
 			setDirty(false);
 			setSnapKey((k) => k + 1);
 			// Push the applied palette up so the Overview (and anything showing the CURRENT theme
@@ -1525,7 +1599,10 @@ function ColorModule({ onApplied }) {
 						onClick={() =>
 							applyPalette(
 								activePalette,
-								preset ? preset.title : seed
+								preset ? preset.title : seed,
+								preset
+									? { preset: preset.slug }
+									: { seed, vividness, chroma }
 							)
 						}
 						isBusy={busy}
@@ -1575,6 +1652,21 @@ function ColorModule({ onApplied }) {
 								rel="noreferrer noopener"
 							>
 								{__('View your site', 'blockwright-blocks')} ↗
+							</a>
+						)}
+						{msg.review && (
+							<a
+								className="bw-ds-msg-link"
+								href={DATA.reviewUrl}
+								target="_blank"
+								rel="noreferrer noopener"
+								onClick={() => reviewEvent('clicked')}
+							>
+								{__(
+									'Rate it on WordPress.org',
+									'blockwright-blocks'
+								)}{' '}
+								↗
 							</a>
 						)}
 						<Button
@@ -1679,8 +1771,9 @@ function ColorModule({ onApplied }) {
 
 /**
  * A little strip of the current theme's palette, for the Overview card.
- * @param root0
- * @param root0.palette
+ *
+ * @param {Object}   root0         Props.
+ * @param {Object[]} root0.palette Palette entries: { slug, name, color }.
  */
 function OverviewSwatches({ palette }) {
 	const map = bySlug(palette);
@@ -1727,7 +1820,106 @@ function ModuleCard({ title, desc, children }) {
 	);
 }
 
-function Overview({ onOpenColor, themePalette }) {
+/**
+ * Keep the applied look without this plugin: copies it into the site's own styles (the
+ * Site Editor's record), so deactivating the plugin does not revert the site to the theme's
+ * default colors. The confirm states the cost, because it is a real one: colors in the site's
+ * own styles no longer receive fixes from theme updates.
+ */
+function KeepLook() {
+	const [confirming, setConfirming] = useState(false);
+	const [busy, setBusy] = useState(false);
+	const [msg, setMsg] = useState(null);
+	const keep = async () => {
+		setBusy(true);
+		try {
+			await apiFetch({
+				path: '/blockwright/v1/design/keep',
+				method: 'POST',
+			});
+			setMsg({
+				type: 'ok',
+				text: __(
+					'Copied to your site styles, and a restore point was saved.',
+					'blockwright-blocks'
+				),
+			});
+		} catch (e) {
+			setMsg({
+				type: 'error',
+				text:
+					e && e.message
+						? e.message
+						: __('Copy failed.', 'blockwright-blocks'),
+			});
+		} finally {
+			setBusy(false);
+			setConfirming(false);
+		}
+	};
+	return (
+		<>
+			<p className="bw-ds-keep-look">
+				{__(
+					'Keeping these colors without the plugin?',
+					'blockwright-blocks'
+				)}{' '}
+				<Button
+					variant="link"
+					disabled={busy}
+					onClick={() => setConfirming(true)}
+				>
+					{__('Copy to site styles', 'blockwright-blocks')}
+				</Button>
+			</p>
+			{msg && (
+				<p
+					className={`bw-ds-msg is-${msg.type}`}
+					role={'error' === msg.type ? 'alert' : 'status'}
+				>
+					{msg.text}
+				</p>
+			)}
+			{confirming && (
+				<Modal
+					title={__(
+						'Copy colors to site styles',
+						'blockwright-blocks'
+					)}
+					onRequestClose={() => setConfirming(false)}
+					className="bw-ds-confirm-modal"
+					size="small"
+				>
+					<p className="bw-ds-confirm-modal-text">
+						{__(
+							'Your current colors are saved into your site styles (Appearance > Editor > Styles), so they stay if you deactivate this plugin. Colors kept there no longer get fixes from theme updates.',
+							'blockwright-blocks'
+						)}
+					</p>
+					<div className="bw-ds-confirm-modal-actions">
+						<Button
+							variant="tertiary"
+							disabled={busy}
+							onClick={() => setConfirming(false)}
+						>
+							{__('Cancel', 'blockwright-blocks')}
+						</Button>
+						<Button
+							variant="primary"
+							isBusy={busy}
+							disabled={busy}
+							onClick={keep}
+						>
+							{__('Copy', 'blockwright-blocks')}
+						</Button>
+					</div>
+				</Modal>
+			)}
+		</>
+	);
+}
+
+function Overview({ onOpenColor, themePalette, snapKey }) {
 	return (
 		<div>
 			<div className="bw-ds-cards">
@@ -1741,7 +1933,7 @@ function Overview({ onOpenColor, themePalette }) {
 						</>
 					}
 					desc={__(
-						'Pick a brand color and generate a full, accessible, adaptive light/dark palette. Apply it to your theme.',
+						'Pick a brand color and generate a full, accessible, adaptive light/dark palette. Apply it to your site.',
 						'blockwright-blocks'
 					)}
 				>
@@ -1788,7 +1980,8 @@ function Overview({ onOpenColor, themePalette }) {
 								'blockwright-blocks'
 							)}
 						</p>
-						<RestorePoints />
+						<RestorePoints refreshKey={snapKey} />
+						<KeepLook />
 					</CardBody>
 				</Card>
 				<Card size="small">
@@ -1837,6 +2030,86 @@ const TABS = [
 	{ name: 'autowright', title: __('Autowright', 'blockwright-blocks') },
 ];
 
+/**
+ * Keep an applied scheme current. The site renders the values stored at Apply; when the color
+ * engine or a theme preset changes in an update, re-deriving from the stored inputs gives a
+ * different result, and this saves it (with its own restore point). Unchanged, the server
+ * writes nothing. A scheme applied before inputs were stored is matched to a preset by its
+ * label; failing that, it is only trimmed to the tokens a scheme drives.
+ *
+ * @param {Function} onChanged Receives the palette actually saved, when one was.
+ */
+function useRefreshApplied(onChanged) {
+	useEffect(() => {
+		if (!APPLIED) {
+			return;
+		}
+		const driven = drivenSlugs();
+		if (!driven) {
+			return;
+		}
+		let inputs = APPLIED.inputs;
+		let label = APPLIED.label || '';
+		let palette = null;
+		if (!inputs) {
+			const match = PRESETS.find((p) => p.title === label);
+			inputs = match ? { preset: match.slug } : null;
+		}
+		if (inputs && inputs.preset) {
+			const p = PRESETS.find((x) => x.slug === inputs.preset);
+			if (!p) {
+				return;
+			}
+			palette = p.palette;
+			label = p.title;
+		} else if (inputs && inputs.seed) {
+			const r = generateScheme(
+				inputs.seed,
+				inputs.vividness ?? 1,
+				inputs.chroma ?? 0.15
+			);
+			if (!r || r.error) {
+				return;
+			}
+			palette = r.palette;
+		} else {
+			palette = APPLIED.values;
+		}
+		apiFetch({
+			path: '/blockwright/v1/design/apply',
+			method: 'POST',
+			data: {
+				category: 'color',
+				palette,
+				label,
+				inputs: inputs || undefined,
+				driven,
+				refresh: true,
+			},
+		})
+			.then((res) => {
+				if (res && res.changed) {
+					APPLIED = { values: palette, inputs, label };
+					const savedBySlug = new Map(
+						palette.map((e) => [e.slug, e.color])
+					);
+					onChanged((cur) =>
+						cur.map((e) =>
+							driven.includes(e.slug) && savedBySlug.has(e.slug)
+								? { ...e, color: savedBySlug.get(e.slug) }
+								: e
+						)
+					);
+				}
+			})
+			// A failed refresh leaves the stored scheme in place, which still renders; nothing
+			// for the user to act on.
+			.catch(() => {});
+		// Runs once per page load, against the page-load data.
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, []);
+}
+
 function App() {
 	// TabPanel is uncontrolled, so "Open Color" jumps tabs by remounting it with a new
 	// initialTabName (bumping the key). Normal tab clicks do not remount.
@@ -1845,10 +2118,71 @@ function App() {
 	// The CURRENT applied theme palette, so the Overview reflects an Apply without a page reload
 	// (seeded from the page-load palette, updated in place when the Color module applies).
 	const [themePalette, setThemePalette] = useState(BASE_PALETTE);
+	// Bumped when the on-load refresh saves, so the Overview's restore-point list (fetched on
+	// mount, before the refresh finishes) shows the point it just saved.
+	const [snapKey, setSnapKey] = useState(0);
+	useRefreshApplied((update) => {
+		setThemePalette(update);
+		setSnapKey((k) => k + 1);
+	});
 	const openColor = () => {
 		setInitialTab('color');
 		setTabKey((k) => k + 1);
 	};
+
+	const gate = DATA.themeGate || { ok: true };
+	if (!gate.ok) {
+		return (
+			<Card size="small" className="bw-ds-theme-gate">
+				<CardBody>
+					<h3 className="bw-ds-card-title">
+						{__(
+							'The Design screen is for the Blockwright theme',
+							'blockwright-blocks'
+						)}
+					</h3>
+					<p className="bw-ds-card-desc">
+						{!gate.can &&
+							__(
+								"The Design tool is built for the free Blockwright theme, which this site is not using. Ask a site administrator to switch to it. The plugin's blocks work with any block theme.",
+								'blockwright-blocks'
+							)}
+						{gate.can && gate.installed
+							? __(
+									"The Design tool is built for the Blockwright theme, which is installed but not active on this site. Activate it to use this screen. The plugin's blocks work with any block theme.",
+									'blockwright-blocks'
+								)
+							: gate.can &&
+								__(
+									"The Design tool is built for the free Blockwright theme, which this site is not using. Install it from WordPress.org to use this screen. The plugin's blocks work with any block theme.",
+									'blockwright-blocks'
+								)}
+					</p>
+					<Button
+						variant={gate.can ? 'primary' : 'secondary'}
+						href={gate.url}
+						target={gate.can ? undefined : '_blank'}
+					>
+						{!gate.can &&
+							__(
+								'About the Blockwright theme',
+								'blockwright-blocks'
+							)}
+						{gate.can &&
+							(gate.installed
+								? __(
+										'Activate Blockwright',
+										'blockwright-blocks'
+									)
+								: __(
+										'Get the Blockwright theme',
+										'blockwright-blocks'
+									))}
+					</Button>
+				</CardBody>
+			</Card>
+		);
+	}
 
 	if (!BASE_PALETTE.length) {
 		return (
@@ -1875,6 +2209,7 @@ function App() {
 							<Overview
 								onOpenColor={openColor}
 								themePalette={themePalette}
+								snapKey={snapKey}
 							/>
 						)}
 						{'color' === tab.name && (
@@ -1902,7 +2237,7 @@ function App() {
 							<ComingSoon
 								title={__('Autowright', 'blockwright-blocks')}
 								blurb={__(
-									'Your design assistant: describe the look you want and get a proposed color scheme, using your own provider key so no credentials pass through us. Every suggestion runs through the same accessible, reversible apply as the manual controls.',
+									'Your design assistant: describe the feel you want and let it propose a color scheme, using your own provider key. Every suggestion still runs through the same accessible, reversible apply.',
 									'blockwright-blocks'
 								)}
 							/>

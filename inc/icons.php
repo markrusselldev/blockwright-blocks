@@ -12,7 +12,7 @@
  * Curation principle: do NOT duplicate core's own set. Every icon here fills a
  * gap in core's set that a business or agency site actually needs. The icons
  * are grouped by the JOB they do on a site (contact, commerce, trust, data,
- * workflow, technical, content, office) and were selected against Phosphor's own
+ * workflow, technical, content, office, and more) and were selected against Phosphor's own
  * category metadata, not by eye.
  *
  * Source: Phosphor REGULAR weight (MIT, GPL-compatible) - the outline look, to
@@ -155,7 +155,7 @@ function sanitize_svg( $svg ) {
  * full pass (2026-08-06), so the rule is auditable rather than a matter of
  * taste:
  *   - RATING scale: star / star-half / star-fill (mirrors core exactly).
- *   - SAVED or FAVOURITED: heart, bookmark.
+ *   - SAVED or FAVORITED: heart, bookmark.
  *   - APPROVAL: thumbs-up (voted).
  *   - STATUS: check-circle (success) and x-circle (error) - kept as a pair so a
  *     status row does not mix weights.

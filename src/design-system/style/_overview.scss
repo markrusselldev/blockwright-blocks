@@ -41,6 +41,20 @@
 	margin-top: 18px;
 }
 
+// "Copy to site styles": a quiet line under the restore points, not a feature of its own - it is
+// a rarely needed safety step, and its confirm dialog explains the cost before anything happens.
+.bw-ds-keep-look {
+	margin: 14px 0 0;
+	padding-top: 12px;
+	border-top: 1px solid $line-20;
+	color: $ink-muted;
+	font-size: 12px;
+
+	.components-button.is-link {
+		font-size: 12px;
+	}
+}
+
 .bw-ds-restore-intro {
 	margin: 0 0 12px;
 	color: $ink-muted;

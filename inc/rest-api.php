@@ -56,7 +56,50 @@ add_action(
 						'type'     => 'string',
 						'required' => false,
 					),
+					'driven'   => array(
+						'type'     => 'array',
+						'required' => false,
+						'items'    => array(
+							'type'    => 'string',
+							'pattern' => '^[a-z0-9-]+$',
+						),
+					),
+					'inputs'   => array(
+						'type'                 => 'object',
+						'required'             => false,
+						'additionalProperties' => false,
+						'properties'           => array(
+							'preset'    => array( 'type' => 'string' ),
+							'seed'      => array(
+								'type'    => 'string',
+								'pattern' => '^#[0-9a-fA-F]{6}$',
+							),
+							'vividness' => array(
+								'type'    => 'number',
+								'minimum' => 0,
+								'maximum' => 2,
+							),
+							'chroma'    => array(
+								'type'    => 'number',
+								'minimum' => 0,
+								'maximum' => 2,
+							),
+						),
+					),
+					'refresh'  => array(
+						'type'     => 'boolean',
+						'required' => false,
+					),
 				),
+			)
+		);
+		register_rest_route(
+			NAMESPACE_V1,
+			'/design/keep',
+			array(
+				'methods'             => 'POST',
+				'permission_callback' => __NAMESPACE__ . '\\can_manage',
+				'callback'            => __NAMESPACE__ . '\\keep',
 			)
 		);
 		register_rest_route(
@@ -102,7 +145,12 @@ add_action(
 );
 
 /**
- * Apply a generated scheme: validate the palette, then write it through the engine.
+ * Apply a generated scheme: validate the palette, then store it through the engine, which keeps
+ * only the tokens the scheme drives (so every other token keeps following the theme).
+ *
+ * A refresh is the Design screen re-deriving an applied scheme from its stored inputs (the
+ * color engine or a preset changed since): it writes, with its own restore point, only when
+ * the result differs from what is applied.
  *
  * @param \WP_REST_Request $request Request.
  * @return \WP_REST_Response|\WP_Error
@@ -118,13 +166,86 @@ function apply( $request ) {
 	if ( is_wp_error( $clean ) ) {
 		return $clean;
 	}
-
+	$driven = is_array( $request['driven'] ) ? array_map( 'sanitize_key', $request['driven'] ) : array();
+	$inputs = sanitize_inputs( $request['inputs'] );
 	$label  = isset( $request['label'] ) ? sanitize_text_field( (string) $request['label'] ) : '';
-	$result = Write_Engine::write( $category, $clean, $label );
+
+	if ( ! empty( $request['refresh'] ) ) {
+		$current = Write_Engine::applied()[ $category ] ?? null;
+		if ( is_array( $current ) && ( $current['values'] ?? null ) === Write_Engine::only_slugs( $clean, $driven ) && ( $current['inputs'] ?? null ) === $inputs ) {
+			return new \WP_REST_Response(
+				array(
+					'ok'      => true,
+					'changed' => false,
+				),
+				200
+			);
+		}
+	}
+
+	$result = Write_Engine::write(
+		$category,
+		$clean,
+		$label,
+		$inputs,
+		array(
+			'driven'     => $driven,
+			// An automatic refresh must not undo a look the owner copied into site styles.
+			'clear_user' => empty( $request['refresh'] ),
+		)
+	);
 	if ( is_wp_error( $result ) ) {
-		// Each engine error carries its own HTTP status at the source (e.g. an unwritable
-		// theme.json is a 409 client-environment condition, a locked write 409, a missing
-		// snapshot 404), so pass it through rather than guessing here.
+		// Each engine error carries its own HTTP status at the source (a missing snapshot 404,
+		// a failed snapshot write 500), so pass it through rather than guessing here.
+		return $result;
+	}
+	return new \WP_REST_Response(
+		array(
+			'ok'       => true,
+			'changed'  => true,
+			'snapshot' => $result['snapshot'],
+		),
+		200
+	);
+}
+
+/**
+ * Clean the inputs that produced a scheme: a preset slug, or a brand color plus the two
+ * engine controls. Anything else is dropped; null when nothing usable was sent.
+ *
+ * @param mixed $raw Raw inputs object.
+ * @return array|null
+ */
+function sanitize_inputs( $raw ) {
+	if ( ! is_array( $raw ) ) {
+		return null;
+	}
+	$out = array();
+	if ( ! empty( $raw['preset'] ) ) {
+		$out['preset'] = sanitize_title( (string) $raw['preset'] );
+	}
+	if ( ! empty( $raw['seed'] ) ) {
+		$seed = sanitize_hex_color( (string) $raw['seed'] );
+		if ( $seed ) {
+			$out['seed'] = strtolower( $seed );
+		}
+	}
+	foreach ( array( 'vividness', 'chroma' ) as $k ) {
+		if ( isset( $raw[ $k ] ) && is_numeric( $raw[ $k ] ) ) {
+			$out[ $k ] = round( max( 0, min( 2, (float) $raw[ $k ] ) ), 4 );
+		}
+	}
+	return $out ? $out : null;
+}
+
+/**
+ * Copy the applied design into the site's own styles, so it survives deactivating the plugin.
+ *
+ * @return \WP_REST_Response|\WP_Error
+ */
+function keep() {
+	$result = Write_Engine::keep_in_site_styles();
+	if ( is_wp_error( $result ) ) {
 		return $result;
 	}
 	return new \WP_REST_Response(
@@ -168,7 +289,7 @@ function delete_snapshot( $request ) {
 function restore( $request ) {
 	$result = Write_Engine::restore( (string) $request['id'] );
 	if ( is_wp_error( $result ) ) {
-		// Status set at the source (404 missing, 422 unreadable, 409 not-writable/locked).
+		// Status set at the source (404 missing, 422 unreadable, 409 another theme's point).
 		return $result;
 	}
 	return new \WP_REST_Response( array( 'ok' => true ), 200 );

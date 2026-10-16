@@ -24,9 +24,10 @@
 // the rail to its content min-content - and the safe-zone status word varies by scheme - so
 // min-width:0 holds the rail at its flex-basis regardless of the status text. Keep the safe-zone
 // status labels short enough to fit the narrow column (see SafeZone: "Gray"/"Fill only"/"Text or
-// fill") so none overflows at 240px.
+// fill") so none overflows at 280px. 280 (not 240) so the longest preset name, "Grayscale",
+// fits its tile in the 4-column grid instead of being cut off.
 .bw-ds-rail {
-	flex: 1 1 240px;
+	flex: 1 1 280px;
 	min-width: 0;
 	max-width: 300px;
 	position: sticky;
@@ -303,7 +304,8 @@
 	font-size: 12px;
 	margin: 8px 0 0;
 	display: flex;
-	gap: 8px;
+	flex-wrap: wrap;
+	gap: 4px 12px;
 	align-items: baseline;
 
 	&.is-ok {
@@ -315,8 +317,10 @@
 	}
 }
 
+// The sentence gets its own line; the links and Dismiss wrap beneath
+// it, so the message fits the narrow rail however many links it carries.
 .bw-ds-msg-text {
-	flex: 1 1 auto;
+	flex: 1 1 100%;
 }
 
 // "View your site" link on a successful Apply. Inherits the success green so the line reads
